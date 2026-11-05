@@ -7,6 +7,8 @@
 <title>區權會報到系統</title>
 <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<!-- Google 後端網址放在同資料夾的 config.js（只要設定一次；以後更新 index.html 直接覆蓋即可） -->
+<script src="config.js"></script>
 <style>
 :root{--pri:#0f5c55;--pri2:#e6f2f0;--bg:#f4f5f2;--ink:#1d2321;--mute:#6b7572;--line:#d9ddd9;--warn:#b54708;--bad:#b42318;--ok:#067647}
 *{box-sizing:border-box}
@@ -218,11 +220,13 @@ table.tb{width:100%;border-collapse:collapse;font-size:14px}
 
 <script>
 /* ================================================================
-   設定：部署 Google Apps Script 後，把「網頁應用程式網址」貼在下面
-   留空 = 示範模式（資料只存在目前這支手機 / 這台電腦的瀏覽器）
+   Google 後端網址：寫在同資料夾的 config.js，內容只有一行：
+     window.AGM_API_URL = 'https://script.google.com/macros/s/……/exec';
+   沒有 config.js 或網址空白 = 示範模式（資料只存在目前這支手機 / 這台電腦的瀏覽器）
+   （相容舊版：也可以把網址直接填在下面 API_URL_INLINE 的引號裡）
    ================================================================ */
-const API_URL = '';
-
+const API_URL_INLINE = '';
+const API_URL = String(window.AGM_API_URL || API_URL_INLINE || '').trim();
 const DEMO = !API_URL;
 const REL = ['配偶','有行為能力之直系血親','其他區分所有權人','承租人'];
 const $ = s => document.querySelector(s);
@@ -805,7 +809,7 @@ function renderAdmin(){
   }
   $('#app').innerHTML=`<div class="wrap wide">
     <div class="hero"><h1>${esc(config.name||'（尚未設定社區名稱）')}</h1><p>${esc(mtg(config))}・${esc(rocDate(config.date))}・報到管理</p></div>
-    ${DEMO?'<div class="demo">示範模式：資料只存在這個瀏覽器。</div>':''}
+    ${DEMO?`<div class="demo"><b>尚未連接 Google 試算表（示範模式）</b>：資料只存在這個瀏覽器。<br>請確認網站資料夾裡有 <b>config.js</b>，且內容填了 Google 後端網址（結尾 /exec）。${location.protocol==='file:'?'':`<br>檢查：<a href="config.js" target="_blank">打開 config.js</a>`}</div>`:''}
     <div class="tabs">${tabs.map(([k,t])=>`<button class="${A.tab===k?'on':''}" onclick="goTab('${k}')">${t}</button>`).join('')}</div>
     ${body}
     <div class="foot"><a href="?">住戶報到頁</a>　·　<a href="#" onclick="sessionStorage.removeItem('agm_pwd');location.reload();return false">登出</a></div></div>`;
