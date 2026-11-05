@@ -221,7 +221,7 @@ table.tb{width:100%;border-collapse:collapse;font-size:14px}
    設定：部署 Google Apps Script 後，把「網頁應用程式網址」貼在下面
    留空 = 示範模式（資料只存在目前這支手機 / 這台電腦的瀏覽器）
    ================================================================ */
-const API_URL = 'https://script.google.com/macros/s/AKfycbziAg-dmn3W_Do33qNcZBRzx1k9GLHD6aFrAv_E9wT27a9jcL7WoqzKSefhnQdu2KjuRw/exec';
+const API_URL = '';
 
 const DEMO = !API_URL;
 const REL = ['配偶','有行為能力之直系血親','其他區分所有權人','承租人'];
@@ -343,6 +343,8 @@ function demoCall(action, p){
   if(action==='show'){ const code=String(p.code||''); if(!code || (code!==String(db.config.showPwd||'') && code!==String(db.config.adminPwd))) throw new Error('投影密碼錯誤');
     return buildShowData({config:db.config,residents:R,checkins:C,topics:db.topics,votes:db.votes,elections:db.elections,evotes:db.evotes}); }
   if(p.pwd !== db.config.adminPwd) throw new Error('管理密碼錯誤');
+  if(action==='reset'){ const keep=p.resetPwd?{adminPwd:'1234'}:{adminPwd:db.config.adminPwd, showPwd:db.config.showPwd||''};
+    dbSave({config:{name:'',meeting:'',title:'',date:'',denom:'',open:false,...keep},residents:[],checkins:{},topics:[],votes:{},elections:[],evotes:{}}); return {}; }
   if(action==='setShowView'){ db.config.showView=String(p.view||'auto'); dbSave(db); return {}; }
   if(action==='admin'){ const {adminPwd,showPwd,...cfg}=db.config; cfg.hasShowPwd=!!showPwd; let ck=C;
     if(p.nosig){ ck={}; Object.entries(C).forEach(([k,v])=>{ const {sig,...o}=v; ck[k]=o; }); }
@@ -751,7 +753,13 @@ function renderAdmin(){
       <label class="f">區分所有權比例分母（總比例）</label><input class="inp" id="c_den" value="${esc(config.denom)}" placeholder="留空 = 自動加總名冊比例（目前 ${fmtNum(sumAll)}）" inputmode="decimal">
       <label class="f">投影密碼（會議室電腦開投影畫面用，只能看統計、不能操作；不改請留空）</label><input class="inp" id="c_spw" type="text" autocomplete="off" placeholder="${config.hasShowPwd?'已設定（輸入新密碼可變更）':'尚未設定'}">
       <label class="f">變更管理密碼（不改請留空）</label><input class="inp" id="c_pwd" type="password" autocomplete="new-password">
-      <button class="btn pri big" style="margin-top:16px" onclick="saveCfg()">儲存設定</button></div>`;
+      <button class="btn pri big" style="margin-top:16px" onclick="saveCfg()">儲存設定</button></div>
+    <div class="card" style="margin-top:14px;border:1.5px solid #f3c4bf"><h2 style="color:var(--bad)">重置還原（清空全部資料）</h2>
+      <p class="hint" style="margin-top:0">把系統還原成剛安裝好的空白狀態，給新的社區／大樓或新的管理者重新匯入資料使用。<br>
+      會清除：<b>住戶名冊、報到紀錄與簽名、議題與投票、委員選舉與選票、委託歸戶、會議設定</b>；所有住戶報到卡也會失效。<br><b class="r" style="color:var(--bad)">此動作無法復原，請先匯出備份。</b></p>
+      <button class="btn big" style="margin-top:10px" onclick="exportXlsx()">① 先匯出備份 Excel</button>
+      <label class="ck" style="margin-top:12px"><input type="checkbox" id="rs_pwd"> 管理密碼與投影密碼也恢復預設（管理密碼 1234、投影密碼清空）</label>
+      <button class="btn bad big" style="margin-top:8px" onclick="resetAll()">② 重置還原</button></div>`;
   }
   if(A.tab==='roster'){
     const tps=A.data.topics||[], stTxt={pending:'未開放',open:'投票中',closed:'已結束'};
@@ -1060,6 +1068,14 @@ async function refresh(){ if(await loadAdmin()) toast('已更新'); }
 async function revoke(seq){ const r=A.data.residents.find(x=>x.seq===seq), n=Object.values(A.data.checkins).filter(c=>c.via===seq).length;
   if(!confirm(`確定要撤銷 ${seq} ${r?r.name:''} 的報到與簽名嗎？${n?`\n委託他出席的 ${n} 戶也會一併撤銷。`:''}\n已投的票也會一併刪除。`)) return;
   try{ await call('revoke',{pwd:A.pwd,seq}); await loadAdmin(); toast('已撤銷'); }catch(e){ toast(e.message); } }
+async function resetAll(){
+  const rp=$('#rs_pwd').checked;
+  if(!confirm('確定要「重置還原」嗎？\n\n住戶名冊、報到紀錄與簽名、議題與投票、委員選舉、委託歸戶、會議設定將全部清空，住戶報到卡全部失效。\n'+(rp?'管理密碼將恢復為 1234、投影密碼清空。':'管理密碼與投影密碼維持不變。')+'\n\n此動作無法復原。')) return;
+  if(prompt('請輸入「重置」兩個字確認')!=='重置') return toast('已取消');
+  try{ await call('reset',{pwd:A.pwd,resetPwd:rp});
+    if(rp){ sessionStorage.removeItem('agm_pwd'); alert('已重置還原。請用預設密碼 1234 重新登入，並立即修改密碼。'); location.reload(); return; }
+    A.tab='roster'; await loadAdmin(); toast('已重置還原，請匯入新的名冊與議題'); }
+  catch(e){ alert('重置失敗：'+e.message); } }
 async function clearAll(){ if(!confirm('確定要清除「所有」報到紀錄、簽名與投票結果嗎？此動作無法復原。')) return; if(prompt('請輸入「清除」兩個字確認')!=='清除') return;
   try{ await call('clear',{pwd:A.pwd}); await loadAdmin(); toast('已清除'); }catch(e){ toast(e.message); } }
 async function saveCfg(){
