@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f5c55">
+<title>區權會報到系統</title>
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+:root{--pri:#0f5c55;--pri2:#e6f2f0;--bg:#f4f5f2;--ink:#1d2321;--mute:#6b7572;--line:#d9ddd9;--warn:#b54708;--bad:#b42318;--ok:#067647}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:16px;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:560px;margin:0 auto;padding:16px 14px 40px}
+.wide{max-width:980px}
+.hero{background:var(--pri);color:#fff;padding:22px 18px 18px;border-radius:0 0 18px 18px;margin:-16px -14px 16px}
+.hero h1{font-size:21px;margin:0 0 4px;line-height:1.35}
+.hero p{margin:0;opacity:.85;font-size:15px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:17px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.step{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--pri);color:#fff;font-size:13px}
+.inp{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:17px}
+.inp:focus{outline:none;border-color:var(--pri)}
+label.f{display:block;font-size:14px;color:var(--mute);margin:12px 0 6px}
+.list{margin-top:10px;max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.list button{display:flex;width:100%;justify-content:space-between;align-items:center;padding:13px 14px;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;font-size:16px}
+.list button:last-child{border-bottom:0}
+.list button:disabled{color:#a0a8a5;background:#fafafa}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;background:#eef0ee;color:var(--mute);white-space:nowrap}
+.tag.ok{background:#dcf5e5;color:var(--ok)}
+.tag.px{background:#fff1e0;color:var(--warn)}
+.chosen{display:flex;justify-content:space-between;align-items:center;background:var(--pri2);border-radius:10px;padding:12px 14px;font-size:18px;font-weight:600}
+.link{background:none;border:0;color:var(--pri);text-decoration:underline;font-size:15px;padding:4px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{padding:15px 10px;border:1.5px solid var(--line);border-radius:12px;background:#fff;font-size:17px;font-weight:600}
+.opt.on{border-color:var(--pri);background:var(--pri2);color:var(--pri)}
+.rel{display:grid;gap:8px;margin-top:12px}
+.rel .opt{text-align:left;font-weight:500;font-size:16px;padding:13px 14px}
+.hint{font-size:14px;color:var(--mute);margin:10px 0 0}
+.sigbox{position:relative;border:1.5px dashed #9aa5a1;border-radius:12px;background:#fff;touch-action:none}
+.sigbox canvas{display:block;width:100%;height:210px;touch-action:none;border-radius:12px}
+.sigbox .ph{position:absolute;inset:0;display:grid;place-items:center;color:#b6bdba;font-size:20px;pointer-events:none}
+.sigbox .base{position:absolute;left:18px;right:18px;bottom:46px;border-bottom:1px solid #e3e6e4;pointer-events:none}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:8px}
+.btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 16px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:15px;font-weight:600;cursor:pointer}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+.btn.bad{color:var(--bad);border-color:#f3c4bf}
+.btn.big{width:100%;padding:16px;font-size:18px;border-radius:12px}
+.btn:disabled{opacity:.5}
+.err{background:#fef3f2;color:var(--bad);border:1px solid #fecdca;border-radius:10px;padding:10px 12px;font-size:15px;margin-bottom:12px}
+.demo{background:#fffaeb;border:1px solid #fedf89;color:#93370d;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:14px}
+.done{text-align:center;padding:30px 10px}
+.done .ic{width:76px;height:76px;border-radius:50%;background:#dcf5e5;color:var(--ok);display:grid;place-items:center;font-size:42px;margin:0 auto 14px}
+.done h2{justify-content:center;font-size:22px}
+.foot{text-align:center;margin-top:26px}
+.foot a{color:#a0a8a5;font-size:13px}
+/* 電腦大螢幕 */
+@media(min-width:900px){ .wrap.wide{max-width:1240px;padding:20px 28px 40px} .wrap.wide .hero{margin:0 0 16px;border-radius:16px} .tabs{flex-wrap:wrap} }
+@media(min-width:1100px){ .livegrid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;align-items:start} .livegrid .card:first-child,.livegrid>div>#live>.stats{margin-top:0} .livegrid>div>.card:first-child{margin-top:0!important} .livegrid .stats{grid-template-columns:repeat(2,1fr)} .livegrid .stat b{font-size:30px} }
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:#fff;font-size:14px;cursor:pointer}.chips button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+/* ===== 投影畫面 ===== */
+body.showmode{background:#f4f6f4;overflow:hidden}
+.show{position:fixed;inset:0;display:flex;flex-direction:column;background:#f4f6f4;color:#14201d}
+.show header{display:flex;justify-content:space-between;align-items:center;gap:2vw;background:#0f5c55;color:#fff;padding:1.6vh 3vw;font-size:clamp(14px,1.7vw,40px)}
+.show main{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:3vh 4vw 7vh}
+.s-sub{font-size:clamp(14px,1.8vw,40px);color:#4d5b57;font-weight:600}
+.s-title{font-size:clamp(24px,4vw,88px);font-weight:800;line-height:1.2;margin:.6vh 0 1.2vh}
+.s-desc{font-size:clamp(14px,1.7vw,36px);color:#4d5b57;margin-top:-.4vh}
+.s-meta{font-size:clamp(14px,1.9vw,40px);margin-bottom:2vh}.s-live{color:#067647;font-weight:700}.s-warn{color:#b54708;font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:2vw;margin-top:3vh}
+.kpi{background:#fff;border-radius:2vh;padding:3vh 2vw;box-shadow:0 .3vh 1.2vh rgba(0,0,0,.06)}
+.kl{font-size:clamp(14px,1.8vw,40px);color:#4d5b57}.kv{font-size:clamp(36px,7vw,170px);font-weight:800;line-height:1.1;margin:1vh 0}.kv small{font-size:.38em;color:#4d5b57;font-weight:600}
+.kb{height:1.6vh;background:#e4e8e6;border-radius:9px;overflow:hidden}.kb i{display:block;height:100%;background:#0f5c55}.ks{font-size:clamp(13px,1.5vw,32px);color:#4d5b57;margin-top:1.2vh}
+.vbig{display:grid;grid-template-columns:repeat(3,1fr);gap:2vw;margin-top:2vh}
+.vb{border-radius:2vh;padding:2.4vh 1.5vw;text-align:center}.vb span{display:block;font-size:clamp(16px,2.2vw,48px);font-weight:700}
+.vb b{display:block;font-size:clamp(36px,7vw,160px);line-height:1.1;margin:.5vh 0}.vb em{font-style:normal;font-size:clamp(13px,1.6vw,34px)}
+.vb.y{background:#dff6e8;color:#05603a}.vb.n{background:#fde4e1;color:#b42318}.vb.u{background:#e9ecea;color:#4d5b57}
+.sbar{position:relative;display:flex;height:2.4vh;border-radius:99px;background:#e4e8e6;overflow:visible;margin:3vh 0 2.4vh}
+.sbar .y{background:#12b76a;border-radius:99px 0 0 99px}.sbar .n{background:#f04438}.sbar .th{position:absolute;top:-1vh;bottom:-1vh;width:.35vw;min-width:3px;background:#14201d;border-radius:2px}
+.sbar .th em{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);white-space:nowrap;font-style:normal;font-size:clamp(11px,1.1vw,24px);font-weight:700;color:#14201d;margin-bottom:.3vh}
+.verd{text-align:center;font-size:clamp(24px,4.4vw,100px);font-weight:800;border-radius:2vh;padding:1.6vh 0}.verd small{font-size:.42em;font-weight:600}
+.verd.ok{background:#12b76a;color:#fff}.verd.bad{background:#d92d20;color:#fff}.verd.live{background:#fff;color:#067647;border:.4vh solid #12b76a}.verd.wait{background:#e9ecea;color:#4d5b57}
+.s-foot{text-align:center;font-size:clamp(13px,1.5vw,32px);color:#4d5b57;margin-top:2vh}
+.rank{list-style:none;margin:0;padding:0;display:grid;grid-auto-flow:column;gap:1.1vh 2vw}
+.rank li{display:grid;grid-template-columns:1.8em minmax(0,1fr) auto 2.4em;align-items:center;gap:.5em;background:#fff;border-radius:1.2vh;padding:.45em .7em;box-shadow:0 .2vh .8vh rgba(0,0,0,.05);line-height:1.3;min-width:0}
+.s-compact .s-title{font-size:clamp(20px,3vw,64px);margin:.3vh 0 .6vh}.s-compact .s-sub,.s-compact .s-meta{font-size:clamp(13px,1.5vw,32px)}.s-compact .s-meta{margin-bottom:1.4vh}
+.rank li.win{border-left:.5vw solid #12b76a}.rank li.tie{border-left:.5vw solid #f79009;background:#fffaeb}
+.rank .rk{font-weight:800;color:#0f5c55;text-align:center}.rank .rn{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rank .rn small{font-weight:500;color:#4d5b57;margin-left:.6em;font-size:.7em}
+.rank .rv{font-weight:800}.rank .rt2{font-size:.7em;font-weight:700;color:#067647;text-align:right}.rank li.tie .rt2{color:#b54708}
+.snav{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:10px;background:rgba(20,32,29,.85);opacity:0;transition:.3s}
+body.navon .snav,.snav:hover{opacity:1}.snav button{padding:8px 14px;border-radius:99px;border:0;background:#2c3c38;color:#fff;font-size:14px;cursor:pointer}.snav button.on{background:#12b76a}.snav .snote{color:#cfd8d5;font-size:13px;align-self:center;margin-left:8px}
+/* vote */
+.topic{border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:10px}
+.topic .tt{font-size:17px;font-weight:700;line-height:1.4}
+.vbtn{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.vbtn button{padding:16px 8px;border-radius:12px;font-size:19px;font-weight:700;border:2px solid}
+.vy{background:#ecfdf3;color:var(--ok);border-color:#a6e9c0!important}.vn{background:#fef3f2;color:var(--bad);border-color:#fdc9c4!important}
+.voted{margin-top:12px;padding:12px;border-radius:10px;font-weight:700;text-align:center;font-size:17px}
+.voted.y{background:#ecfdf3;color:var(--ok)}
+.list button.pk{background:var(--pri2);color:var(--pri);font-weight:600}.voted.n{background:#fef3f2;color:var(--bad)}
+/* admin */
+.vbar{display:flex;height:10px;border-radius:9px;background:#eef0ee;overflow:hidden;margin:14px 0 8px}.vbar .y{background:#12b76a}.vbar .n{background:#f04438}
+.tb.vt td,.tb.vt th{padding:7px 6px}.tb.vt .hl{background:#eef7f5;font-weight:700}
+.passrow{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:12px;font-size:14px;color:var(--mute)}
+.passrow select{padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;background:#fff;font-size:15px;color:var(--ink);font-weight:600}
+.verdict{border-radius:10px;padding:10px 12px;margin-top:4px;display:flex;flex-direction:column;gap:2px}
+.verdict b{font-size:20px}.verdict span{font-size:13px}
+.verdict.ok{background:#12b76a;color:#fff}.verdict.bad{background:#d92d20;color:#fff}
+.verdict.pend{background:#f2f4f3;color:var(--mute)}.verdict.pend b{font-size:16px}.verdict.pend.ok{background:#ecfdf3;color:var(--ok)}
+.vres{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.vk{border-radius:10px;padding:8px 10px;text-align:center}.vk span{display:block;font-size:13px}.vk b{display:block;font-size:22px;margin:2px 0}.vk small{font-size:12px;color:var(--mute)}
+.vk.y{background:#ecfdf3;color:var(--ok)}.vk.n{background:#fef3f2;color:var(--bad)}.vk.u{background:#f2f4f3;color:var(--mute)}
+.ck{display:flex;align-items:center;gap:8px;font-size:15px;margin:6px 0}.ck input{width:18px;height:18px}
+.btn.sm{padding:8px 14px;font-size:14px}
+.vc{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.vcn{min-width:0;font-weight:600;font-size:15px;line-height:1.4}
+.drow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 2px;border-top:1px solid var(--line)}.dn{min-width:0}.dn b{font-size:15px}.dn small{display:block;color:var(--mute);font-size:12px;margin-top:2px}.dnote{font-size:13px;color:#344;margin-top:4px;line-height:1.45}
+.tag.bad{background:#fef3f2;color:var(--bad)}
+.gchk{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:15px}.gchk label{display:flex;align-items:center;gap:6px}.gchk input{width:18px;height:18px}
+.tb tr.win td{background:#f0faf6}
+.tb.rk td,.tb.rk th{padding:8px 5px;font-size:13px}.tb.rk td.nm{white-space:normal;min-width:90px;font-size:14px}.tb.rk small{display:block;color:var(--mute);font-size:12px}
+.grp{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:4px;background:#fff1e0;color:#93370d;border-radius:99px;padding:4px 4px 4px 10px;margin:3px 4px 3px 0;font-size:14px}
+.chip button{border:0;background:rgba(0,0,0,.08);border-radius:50%;width:22px;height:22px;line-height:20px;font-size:15px;padding:0;cursor:pointer}
+.warnbox{background:#fffaeb;border:1px solid #fedf89;color:#93370d;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:8px}
+.tabs{display:flex;gap:6px;overflow:auto;margin-bottom:14px;padding-bottom:2px}
+.tabs button{flex:none;padding:9px 14px;border-radius:99px;border:1px solid var(--line);background:#fff;font-size:15px}
+.tabs button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:720px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+.stat b{display:block;font-size:24px;margin-top:2px}
+.stat span{font-size:13px;color:var(--mute)}
+.bar{height:6px;background:#eef0ee;border-radius:9px;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--pri)}
+table.tb{width:100%;border-collapse:collapse;font-size:14px}
+.tb th,.tb td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+.tb th{color:var(--mute);font-weight:500;font-size:13px;background:#fafbfa;position:sticky;top:0}
+.tb img{height:30px;max-width:80px;object-fit:contain}
+.scroll{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.filters{display:flex;gap:8px;margin:12px 0}
+.filters .inp{padding:9px 12px;font-size:15px;flex:1;min-width:0}
+.filters select,.filters .btn{flex:none}
+.tb td{white-space:nowrap}
+.filters select{padding:9px;border:1.5px solid var(--line);border-radius:10px;background:#fff}
+.grid2{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+.qr{display:grid;place-items:center;padding:10px}
+.qr img{width:240px;height:240px;image-rendering:pixelated}
+.url{word-break:break-all;font-size:13px;color:var(--mute);background:#fafbfa;border-radius:8px;padding:8px 10px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1d2321;color:#fff;padding:11px 18px;border-radius:99px;font-size:15px;z-index:99;opacity:0;transition:.25s;pointer-events:none}
+.toast.on{opacity:1}
+.spin{display:inline-block;width:18px;height:18px;border:2.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ===== 簽到表（比照 Word 模板）===== */
+#pv{position:fixed;inset:0;background:#6b7572;z-index:50;overflow:auto}
+#pv .bar2{position:sticky;top:0;z-index:2;display:flex;gap:8px;justify-content:center;padding:10px;background:#1d2321}
+#pv .pages{padding:14px 0 40px;zoom:var(--z,1)}
+.page{width:210mm;height:296.5mm;margin:0 auto 14px;background:#fff;padding:10mm 18.5mm 6mm;position:relative;overflow:hidden;
+  font-family:"PMingLiU","MingLiU","新細明體","Noto Serif TC","Noto Serif CJK TC","Songti TC","Source Han Serif TC",serif;color:#000}
+.page .ttl{text-align:center;font-size:16pt;margin:0 0 1.5mm;letter-spacing:.5pt}
+.page .dt{text-align:right;font-size:11pt;margin:0 0 1.5mm}
+.page .pn{position:absolute;right:18.5mm;bottom:6mm;font-size:10pt}
+.sheet{width:100%;border-collapse:collapse;table-layout:fixed;border:1.5pt solid #000}
+.sheet th,.sheet td{border:.75pt solid #000;text-align:center;vertical-align:middle;padding:0 1mm;font-weight:normal}
+.sheet th{height:10mm;font-size:11pt;line-height:1.25}
+.sheet td{height:17.5mm;font-size:11pt;line-height:1.3;word-break:break-all}
+.sheet td.sig{padding:.6mm}
+.sheet td.sig img{max-width:100%;max-height:16mm;display:block;margin:0 auto}
+.sheet td.att{font-size:10.5pt;white-space:nowrap;padding:0}
+.sheet td.rl{text-align:left;font-size:9pt;line-height:1.36;padding:0 .8mm}
+.sheet td.rl div{text-decoration:underline;white-space:nowrap}
+.sheet td.rt{font-size:10.5pt}
+.cb{display:inline-block;width:2.9mm;height:2.9mm;border:.6pt solid #000;vertical-align:-.3mm;margin-right:.3mm;position:relative;text-decoration:none}
+.cb.on::after{content:"";position:absolute;left:.75mm;top:-.15mm;width:.95mm;height:2mm;border:solid #000;border-width:0 .5mm .5mm 0;transform:rotate(45deg)}
+.sum{width:100%;border-collapse:collapse;margin-top:5mm;border:1.5pt solid #000;font-size:11pt}
+.sum th,.sum td{border:.75pt solid #000;padding:2mm 2mm;height:9mm;font-weight:normal}
+.sum th{background:#f2f2f2;width:24%}
+.sum td{width:26%;text-align:center}
+.sheet td.rm{font-size:8.5pt;line-height:1.3}
+.page.rpt{padding:10mm 15mm 6mm}
+.rt{width:100%;border-collapse:collapse;table-layout:fixed;border:1.2pt solid #000;margin-bottom:0}
+.rt th,.rt td{border:.6pt solid #000;padding:.6mm 1mm;text-align:center;vertical-align:middle;font-size:9.5pt;line-height:1.3;font-weight:normal;overflow:hidden}
+.rt th{background:#eee}.rt td.l{text-align:left}.rt td.nw{white-space:nowrap;text-overflow:ellipsis}.rt .sm{font-size:8.5pt;color:#333}
+.rt tr.w td{background:#eef7f1}.rt b.ok,.note.ok{color:#05603a}.rt b.bad,.note.bad{color:#b42318}
+.rs{width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:4mm}.rs th,.rs td{border:.6pt solid #000;padding:1mm 2mm;text-align:left;font-weight:normal}.rs th{width:18%;background:#eee}
+.rcont{font-size:9pt;color:#333;height:6mm}.ecap{font-size:10pt;line-height:1.45;margin-bottom:1.5mm}
+.sgn{display:flex;justify-content:space-between;margin-top:12mm;font-size:11pt}.sgn span{width:30%;border-bottom:.6pt solid #000;padding-bottom:6mm}
+.page .note{font-size:9pt;margin-top:2mm;color:#333}
+.poster{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;height:100%}
+.poster h1{font-size:28pt;margin:0 0 4mm}
+.poster h2{font-size:20pt;margin:0 0 10mm;font-weight:normal}
+.poster img{width:120mm;height:120mm;image-rendering:pixelated}
+.poster p{font-size:15pt;margin:8mm 0 0}
+.page.qp{padding:8mm 9mm;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);gap:0}
+.qc{border:.5pt dashed #999;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2mm;overflow:hidden;font-family:-apple-system,"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif}
+.qc1{font-size:10.5pt;font-weight:700}.qc2{font-size:8.5pt;color:#444;margin-bottom:1.2mm}
+.qc3{font-size:13pt;font-weight:700;border:1pt solid #000;border-radius:1.5mm;padding:.6mm 3mm;margin-bottom:1mm;max-width:100%;line-height:1.25}
+.qc3.long{font-size:10pt;padding:.6mm 2mm}
+.qc img{width:33mm;height:33mm;image-rendering:pixelated}.qc4{font-size:8.5pt;margin-top:.8mm}.qc5{font-size:7.5pt;color:#444;line-height:1.35;margin-top:.6mm}
+@page{size:A4 portrait;margin:0}
+@media print{
+  html,body{background:#fff}
+  body>*:not(#pv){display:none!important}
+  #pv{position:static;background:#fff;overflow:visible}
+  #pv .bar2{display:none}
+  #pv .pages{padding:0;zoom:1}
+  .page{margin:0;break-after:page;page-break-after:always}
+  .page:last-child{break-after:auto;page-break-after:auto}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div id="app"><div class="wrap" style="text-align:center;padding-top:80px;color:#6b7572"><span class="spin"></span></div></div>
+<div id="pv" hidden><div class="bar2"><button class="btn pri" onclick="window.print()">列印 / 存成 PDF</button><button class="btn" onclick="closePV()">關閉</button></div><div class="pages" id="pages"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   設定：部署 Google Apps Script 後，把「網頁應用程式網址」貼在下面
+   留空 = 示範模式（資料只存在目前這支手機 / 這台電腦的瀏覽器）
+   ================================================================ */
+const API_URL = '';
+
+const DEMO = !API_URL;
+const REL = ['配偶','有行為能力之直系血親','其他區分所有權人','承租人'];
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const params = new URLSearchParams(location.search);
+const PAGE = params.get('p') === 'admin' ? 'admin' : params.get('p') === 'show' ? 'show' : 'checkin';
+
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),2200); }
+function rocDate(d){ if(!d) return '　　年　　月　　日'; const m=String(d).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/); if(!m) return d; return `${+m[1]-1911}年${m[2].padStart(2,'0')}月${m[3].padStart(2,'0')}日`; }
+function hhmm(iso){ if(!iso) return ''; const d=new Date(iso); if(isNaN(d)) return iso; return d.toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}); }
+function natCmp(a,b){ const x=String(a).match(/\d+|\D+/g)||[], y=String(b).match(/\d+|\D+/g)||[];
+  for(let i=0;i<Math.min(x.length,y.length);i++){ const p=x[i], q=y[i]; if(p===q) continue; const n1=/^\d/.test(p), n2=/^\d/.test(q); if(n1&&n2) return (+p)-(+q)||p.length-q.length; return p<q?-1:1; } return x.length-y.length; }
+const r4=v=>Math.round(v*1e4)/1e4;
+function num(s){ const v=parseFloat(String(s).replace(/,/g,'')); return isNaN(v)?0:v; }
+function fmtNum(v){ return String(Math.round(v*10000)/10000); }
+const DEF_MEETING='區分所有權人會議';
+const mtg = c => (c&&c.meeting)||DEF_MEETING;
+const sheetTitle = c => (c&&c.title) ? c.title : `${c.name||''}${mtg(c)}出席人員名冊（簽到簿）`;
+function pct(a,b){ return b>0 ? (a/b*100).toFixed(2)+'%' : '—'; }
+
+/* ---------------- 資料層：示範模式（localStorage）---------------- */
+const LS = 'agm_checkin_v1';
+function dbLoad(){ try{ const d=JSON.parse(localStorage.getItem(LS)); if(d&&d.config) return d; }catch(e){} return {config:{name:'',meeting:'',title:'',date:'',denom:'',adminPwd:'1234'},residents:[],checkins:{}}; }
+function dbSave(d){ try{ localStorage.setItem(LS, JSON.stringify(d)); }catch(e){ throw new Error('瀏覽器儲存空間不足'); } }
+const TK_ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function newToken(){ const a=new Uint32Array(8); crypto.getRandomValues(a); return Array.from(a,x=>TK_ABC[x%32]).join(''); }
+function giveTokens(list, old){ const used=new Set(); const keep={}; (old||[]).forEach(r=>{ if(r.token) keep[r.seq]=r.token; });
+  return list.map(r=>{ let t=keep[r.seq]; if(!t||used.has(t)){ do{ t=newToken(); }while(used.has(t)); } used.add(t); return {...r, token:t}; }); }
+const voteBy = c => (c&&c.voteBy)==='count' ? 'count' : 'ratio';
+const VB_TXT={ratio:'依區分所有權比例',count:'依戶數'};
+// 通過門檻：例「過半數」「三分之二以上」「四分之三以上」「60%以上」「超過60%」
+const PASS_DEF='過半數', PASS_PRESETS=['過半數','三分之二以上','四分之三以上'];
+function parsePass(s){ s=String(s||'').replace(/\s/g,''); if(!s) s=PASS_DEF;
+  const cn=[['二分之一',1/2],['三分之二',2/3],['四分之三',3/4],['三分之一',1/3],['五分之四',4/5],['五分之三',3/5]];
+  let f=null; const gt=/過半|超過|大於|>/.test(s) && !/以上|≥|>=/.test(s);
+  if(/過半/.test(s)) f=1/2; else { const c=cn.find(([k])=>s.includes(k)); if(c) f=c[1];
+    else { let m=s.match(/(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)/); if(m) f=+m[1]/+m[2]; else if((m=s.match(/(\d+(?:\.\d+)?)/))) f=+m[1]/100; } }
+  if(f===null||!(f>0&&f<=1)) return null;
+  return {gt:/過半/.test(s)?true:gt, f, label:passLabel(/過半/.test(s)?true:gt,f)}; }
+function passLabel(gt,f){ const near=x=>Math.abs(f-x)<1e-6;
+  if(gt&&near(1/2)) return '過半數';
+  const c=[['二分之一',1/2],['三分之二',2/3],['四分之三',3/4]].find(([,v])=>near(v));
+  const n=c?c[0]:`${+(f*100).toFixed(2)}%`; return gt?`超過${n}`:`${n}以上`; }
+function judge(T,t,vb){ const p=parsePass(t.pass)||parsePass(PASS_DEF), R=vb==='ratio', y=R?T.yr:T.y, att=R?T.attR:T.attN, r=att?y/att:0;
+  return {p, r, ok: att>0 && (p.gt ? r>p.f+1e-9 : r>=p.f-1e-9)}; }
+function buildShowData(D){ const c=D.config, st=stats(D);
+  return {name:c.name||'', meeting:c.meeting||'', date:c.date||'', open:!!c.open, voteBy:voteBy(c), view:c.showView||'auto',
+    att:{total:st.total, att:st.att, self:st.self, proxy:st.proxy, sumAtt:r4(st.sumAtt), denom:r4(st.denom), denomStr:st.denomStr},
+    topics:(D.topics||[]).map(t=>{ const x=tally(t.id,D); return {id:t.id,title:t.title,desc:t.desc||'',status:t.status,pass:t.pass||'',
+      y:x.y,yr:r4(x.yr),n:x.n,nr:r4(x.nr),uN:x.uN,uR:r4(x.uR),attN:x.attN,attR:r4(x.attR),total:x.total,denom:r4(x.denom)}; }),
+    elections:(D.elections||[]).map(e=>{ const x=etally(e,D); return {id:e.id,name:e.name,groups:e.groups,maxVotes:e.maxVotes,top:e.top,status:e.status,sort:e.sort,
+      nv:x.nv,elig:x.elig,tie:x.tie,list:x.list.filter(y=>y.res).map(y=>({rank:y.rank,seq:y.c.seq,name:y.c.name,group:y.c.group||'',v:y.v,r:r4(y.r),res:y.res}))}; }) }; }
+const ckMode = c => (c&&c.mode)==='shared' ? 'shared' : 'personal';
+const PROXY_REL='其他區分所有權人';
+function checkDelegates(list){ const by={}; list.forEach(r=>by[r.seq]=r); const err=[];
+  list.forEach(r=>{ if(!r.delegate) return; const d=by[r.delegate];
+    if(!d) err.push(`${r.seq} 的受託戶「${r.delegate}」不在名冊中`); else if(d.seq===r.seq) err.push(`${r.seq} 不能委託給自己`);
+    else if(d.delegate) err.push(`${r.seq} 的受託戶 ${d.seq} 本身也委託了別人，受託戶不能再委託出去`); });
+  if(err.length) throw new Error('受託戶設定有誤：\n'+err.slice(0,8).join('\n')); }
+function demoCall(action, p){
+  const db = dbLoad(); db.topics=db.topics||[]; db.votes=db.votes||{}; db.elections=db.elections||[]; db.evotes=db.evotes||{};
+  const cm=ckMode(db.config), R=db.residents, C=db.checkins, now=()=>new Date().toISOString();
+  const bySeq=s=>R.find(x=>x.seq===s), principalsOf=s=>R.filter(x=>x.delegate===s);
+  const byTok=t=>{ const r=R.find(x=>x.token===t); if(!r) throw new Error('這個 QR Code 無效或已經停用，請洽報到處'); return r; };
+  const dropVotes=seqs=>[db.votes,db.evotes].forEach(B=>Object.values(B).forEach(V=>seqs.forEach(s=>delete V[s])));
+  const inG=(h,e)=>!e.groups.length||e.groups.includes(h.group||'');
+  const mine=r=>[r,...principalsOf(r.seq).filter(x=>C[x.seq]&&C[x.seq].via===r.seq)];
+  const myEl=r=>!C[r.seq]?[]:db.elections.filter(e=>e.status==='open').map(e=>{ const elig=mine(r).filter(h=>inG(h,e)); if(!elig.length) return null;
+    const V=db.evotes[e.id]||{}, left=elig.filter(h=>!V[h.seq]), done=elig.find(h=>V[h.seq]);
+    return {id:e.id,name:e.name,groups:e.groups,maxVotes:e.maxVotes,weight:left.length,total:elig.length,picks:left.length?null:V[done.seq].picks,
+      candidates:R.filter(h=>inG(h,e)).map(h=>({seq:h.seq,name:h.name,group:h.group||''}))}; }).filter(Boolean);
+  const findEl=id=>{ const e=db.elections.find(x=>x.id===String(id)); if(!e) throw new Error('找不到這場選舉'); return e; };
+  if(action==='public'){
+    const o={name:db.config.name, meeting:db.config.meeting||'', date:db.config.date, mode:cm, open:!!db.config.open, count:R.length,
+      topics:db.topics.filter(t=>t.status==='open').map(({id,title,desc})=>({id,title,desc}))};
+    if(p.t){ const r=byTok(p.t), d=r.delegate?bySeq(r.delegate):null, votes={};
+      db.topics.forEach(t=>{ const v=(db.votes[t.id]||{})[r.seq]; if(v) votes[t.id]=v.v; });
+      o.me={seq:r.seq,name:r.name,done:!!C[r.seq],delegate:d?{seq:d.seq,name:d.name}:null,principals:principalsOf(r.seq).map(x=>({seq:x.seq,name:x.name,done:!!C[x.seq]})),votes,elections:myEl(r)}; }
+    else if(cm==='shared') o.residents=R.map(r=>({seq:r.seq,name:r.name,done:!!C[r.seq],delegate:r.delegate||''}));
+    return o; }
+  if(action==='checkin'){
+    if(!db.config.open) throw new Error('目前未開放報到，請依現場工作人員指示');
+    if(p.t) p.seq=byTok(p.t).seq; else if(cm==='personal') throw new Error('請掃描您家專屬的 QR Code 報到');
+    const r=bySeq(p.seq); if(!r) throw new Error('找不到這個序號，請重新選擇');
+    if(r.delegate) throw new Error(`本戶已委託 ${r.delegate} 出席，報到由受託人辦理`);
+    if(C[r.seq]) throw new Error(`${r.seq} ${r.name} 已經完成報到，如需更正請洽報到處`);
+    if(p.mode!=='本人' && p.mode!=='委託') throw new Error('請選擇「是否委託出席」');
+    if(p.mode==='委託' && !REL.includes(p.rel)) throw new Error('請選擇「委託關係」');
+    if(!/^data:image\/png;base64,/.test(p.sig||'')) throw new Error('請先簽名');
+    const time=now(); C[r.seq]={mode:p.mode, rel:p.mode==='委託'?p.rel:'', sig:p.sig, time, via:''}; let n=0;
+    principalsOf(r.seq).forEach(x=>{ if(!C[x.seq]){ C[x.seq]={mode:'委託',rel:PROXY_REL,sig:p.sig,time,via:r.seq}; n++; } });
+    dbSave(db); return {time, token:r.token, principals:n}; }
+  if(action==='vote'){
+    if(!p.t) throw new Error('請用您的報到卡 QR Code 開啟投票頁');
+    const r=byTok(p.t), t=db.topics.find(x=>x.id===String(p.topic));
+    if(!t) throw new Error('找不到這個議題'); if(t.status!=='open') throw new Error('此議題目前未開放投票');
+    if(r.delegate) throw new Error('本戶已委託他人出席，投票由受託人辦理');
+    if(!C[r.seq]) throw new Error('請先完成報到才能投票');
+    if(p.v!=='同意' && p.v!=='不同意') throw new Error('請選擇同意或不同意');
+    const V=db.votes[t.id]=db.votes[t.id]||{}; if(V[r.seq]) throw new Error('您已經投過這個議題，不能更改');
+    const time=now(); let n=0;
+    [r,...principalsOf(r.seq).filter(x=>C[x.seq]&&C[x.seq].via===r.seq)].forEach(x=>{ if(!V[x.seq]){ V[x.seq]={v:p.v,by:r.seq,time}; n++; } });
+    dbSave(db); return {count:n}; }
+  if(action==='evote'){
+    if(!p.t) throw new Error('請用您的報到卡 QR Code 開啟投票頁');
+    const r=byTok(p.t), e=findEl(p.eid);
+    if(e.status!=='open') throw new Error('這場選舉目前未開放投票');
+    if(r.delegate) throw new Error('本戶已委託他人出席，投票由受託人辦理');
+    if(!C[r.seq]) throw new Error('請先完成報到才能投票');
+    const picks=(p.picks||[]).map(String);
+    if(!picks.length) throw new Error('請至少圈選 1 位');
+    if(picks.length>e.maxVotes) throw new Error('每人最多圈選 '+e.maxVotes+' 位');
+    if(new Set(picks).size!==picks.length) throw new Error('同一位候選人只能圈選一次');
+    const cand=new Set(R.filter(h=>inG(h,e)).map(h=>h.seq)); const bad=picks.find(x=>!cand.has(x)); if(bad) throw new Error(bad+' 不是這場選舉的候選人');
+    const V=db.evotes[e.id]=db.evotes[e.id]||{}, left=mine(r).filter(h=>inG(h,e)&&!V[h.seq]);
+    if(!left.length) throw new Error('您已經投過這場選舉，或沒有這場選舉的投票資格');
+    const time=now(); left.forEach(h=>V[h.seq]={picks,by:r.seq,time}); dbSave(db); return {count:left.length}; }
+  if(action==='show'){ const code=String(p.code||''); if(!code || (code!==String(db.config.showPwd||'') && code!==String(db.config.adminPwd))) throw new Error('投影密碼錯誤');
+    return buildShowData({config:db.config,residents:R,checkins:C,topics:db.topics,votes:db.votes,elections:db.elections,evotes:db.evotes}); }
+  if(p.pwd !== db.config.adminPwd) throw new Error('管理密碼錯誤');
+  if(action==='setShowView'){ db.config.showView=String(p.view||'auto'); dbSave(db); return {}; }
+  if(action==='admin'){ const {adminPwd,showPwd,...cfg}=db.config; cfg.hasShowPwd=!!showPwd; let ck=C;
+    if(p.nosig){ ck={}; Object.entries(C).forEach(([k,v])=>{ const {sig,...o}=v; ck[k]=o; }); }
+    return {config:{...cfg,open:!!cfg.open}, residents:R, checkins:ck, topics:db.topics, votes:db.votes, elections:db.elections, evotes:db.evotes}; }
+  if(action==='saveConfig'){ const c=p.config; Object.assign(db.config,{name:c.name,meeting:c.meeting,title:c.title,date:c.date,denom:c.denom,mode:c.mode,voteBy:c.voteBy}); if(c.showPwd!==undefined) db.config.showPwd=c.showPwd; if(c.newPwd) db.config.adminPwd=c.newPwd; dbSave(db); return {}; }
+  if(action==='setOpen'){ db.config.open=!!p.open; dbSave(db); return {}; }
+  if(action==='setVoteBy'){ db.config.voteBy=p.voteBy==='count'?'count':'ratio'; dbSave(db); return {}; }
+  if(action==='import'){
+    const keep={}; if(!p.clearCheckins) R.forEach(r=>keep[r.seq]=r.delegate||'');
+    const list=p.residents.map(r=>({seq:r.seq,name:r.name,ratio:r.ratio,delegate:p.hasDelegate?(r.delegate||''):(keep[r.seq]||''),group:String(r.group||'').trim()}));
+    checkDelegates(list);
+    db.residents=giveTokens(list, p.clearCheckins?null:R); db.config.denom=p.denom||'';
+    if(p.clearCheckins){ db.checkins={}; db.votes={}; db.evotes={}; db.topics.forEach(t=>t.status='pending'); db.elections.forEach(e=>e.status='pending'); }
+    dbSave(db); return {}; }
+  if(action==='regen'){ db.residents=giveTokens(R.map(({token,...r})=>r), null); dbSave(db); return {}; }
+  if(action==='revoke'){ const gone=Object.keys(C).filter(s=>s===p.seq||C[s].via===p.seq); gone.forEach(s=>delete C[s]); dropVotes(gone); dbSave(db); return {}; }
+  if(action==='clear'){ db.checkins={}; db.votes={}; db.evotes={}; db.topics.forEach(t=>t.status='pending'); db.elections.forEach(e=>e.status='pending'); dbSave(db); return {}; }
+  if(action==='addElection'){ const name=String(p.name||'').trim(); if(!name) throw new Error('請輸入選舉名稱');
+    const mv=parseInt(p.maxVotes,10), top=parseInt(p.top,10)||20; if(!(mv>=1)) throw new Error('每人票數至少 1 票');
+    const id=String(db.elections.reduce((m,x)=>Math.max(m,parseInt(x.id,10)||0),0)+1);
+    db.elections.push({id,name,groups:(p.groups||[]).filter(Boolean),maxVotes:mv,top,status:'pending',sort:p.sort==='ratio'?'ratio':'count'}); dbSave(db); return {id}; }
+  if(action==='setElection'){ const e=findEl(p.id), f=p.fields||{}, has=Object.keys(db.evotes[e.id]||{}).length>0;
+    if(has&&(f.groups!==undefined||f.maxVotes!==undefined)) throw new Error('已有人投票，不能再修改範圍或每人票數');
+    if(f.name!==undefined){ if(!String(f.name).trim()) throw new Error('請輸入選舉名稱'); e.name=String(f.name).trim(); }
+    if(f.groups!==undefined) e.groups=(f.groups||[]).filter(Boolean);
+    if(f.maxVotes!==undefined){ const mv=parseInt(f.maxVotes,10); if(!(mv>=1)) throw new Error('每人票數至少 1 票'); e.maxVotes=mv; }
+    if(f.top!==undefined){ const t=parseInt(f.top,10); if(!(t>=1)) throw new Error('取前幾名至少 1'); e.top=t; }
+    if(f.status!==undefined){ if(!['pending','open','closed'].includes(f.status)) throw new Error('狀態錯誤'); e.status=f.status; }
+    if(f.sort!==undefined) e.sort=f.sort==='ratio'?'ratio':'count';
+    dbSave(db); return {}; }
+  if(action==='delElection'){ const e=findEl(p.id); if(Object.keys(db.evotes[e.id]||{}).length) throw new Error('已有人投票，不能刪除');
+    db.elections=db.elections.filter(x=>x!==e); dbSave(db); return {}; }
+  if(action==='importTopics'){ const ids=new Set();
+    db.topics=p.topics.filter(t=>String(t.title||'').trim()).map((t,i)=>{ const id=String(t.id||i+1).trim(); if(ids.has(id)) throw new Error('議題編號重複：'+id); ids.add(id);
+      return {id,title:String(t.title).trim(),desc:String(t.desc||'').trim(),pass:String(t.pass||'').trim(),status:'pending'}; });
+    db.votes={}; dbSave(db); return {}; }
+  if(action==='addTopic'){ const title=String(p.title||'').trim(); if(!title) throw new Error('請輸入議題名稱');
+    const id=String(db.topics.reduce((m,x)=>Math.max(m,parseInt(x.id,10)||0),0)+1); db.topics.push({id,title,desc:String(p.desc||'').trim(),pass:String(p.pass||'').trim(),status:'pending'}); dbSave(db); return {id}; }
+  if(action==='setPass'){ const t=db.topics.find(x=>x.id===String(p.id)); if(!t) throw new Error('找不到這個議題'); t.pass=String(p.pass||'').trim(); dbSave(db); return {}; }
+  if(action==='setTopic'){ const t=db.topics.find(x=>x.id===String(p.id)); if(!t) throw new Error('找不到這個議題'); if(!['pending','open','closed'].includes(p.status)) throw new Error('狀態錯誤'); t.status=p.status; dbSave(db); return {}; }
+  if(action==='setDelegate'){ const r=bySeq(p.seq), del=p.delegate||''; if(!r) throw new Error('找不到 '+p.seq);
+    if(del){ const d=bySeq(del); if(!d) throw new Error('找不到受託戶 '+del); if(d.seq===r.seq) throw new Error('不能委託給自己');
+      if(d.delegate) throw new Error(`${d.seq} ${d.name} 本身已委託他人，不能再當受託戶`);
+      if(principalsOf(r.seq).length) throw new Error(`${r.seq} ${r.name} 已經是其他戶的受託戶，不能再委託出去`);
+      if(C[r.seq] && !C[r.seq].via) throw new Error(`${r.seq} ${r.name} 已自行報到，請先到「報到名單」撤銷`); }
+    if(C[r.seq] && C[r.seq].via && C[r.seq].via!==del){ delete C[r.seq]; dropVotes([r.seq]); }
+    r.delegate=del;
+    if(del && C[del] && !C[r.seq]) C[r.seq]={mode:'委託',rel:PROXY_REL,sig:C[del].sig,time:now(),via:del};
+    dbSave(db); return {}; }
+  throw new Error('未知的動作');
+}
+async function call(action, payload={}){
+  if(DEMO){ await new Promise(r=>setTimeout(r,120)); return demoCall(action, payload); }
+  let res;
+  try{ res = await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...payload})}); }
+  catch(e){ throw new Error('網路連線失敗，請確認手機有網路後再試一次'); }
+  const j = await res.json().catch(()=>({ok:false,msg:'伺服器回應格式錯誤'}));
+  if(!j.ok) throw new Error(j.msg||'發生錯誤');
+  return j;
+}
+
+/* ---------------- 手寫簽名板 ---------------- */
+function SigPad(canvas, onChange){
+  const ctx = canvas.getContext('2d'); let drawing=false, last=null, pts=0, box=null, w=0;
+  function setup(){ const r=canvas.getBoundingClientRect(); if(Math.abs(r.width-w)<2 && w) return; w=r.width; const d=window.devicePixelRatio||1;
+    canvas.width=Math.round(r.width*d); canvas.height=Math.round(r.height*d); ctx.setTransform(d,0,0,d,0,0);
+    ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#111'; ctx.fillStyle='#111'; ctx.lineWidth=2.8; clear(); }
+  function clear(){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.restore(); pts=0; box=null; onChange&&onChange(false); }
+  function pos(e){ const r=canvas.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+  function grow(p){ if(!box) box={x0:p.x,y0:p.y,x1:p.x,y1:p.y}; box.x0=Math.min(box.x0,p.x); box.y0=Math.min(box.y0,p.y); box.x1=Math.max(box.x1,p.x); box.y1=Math.max(box.y1,p.y); }
+  canvas.addEventListener('pointerdown',e=>{ e.preventDefault(); canvas.setPointerCapture(e.pointerId); drawing=true; last=pos(e); grow(last);
+    ctx.beginPath(); ctx.arc(last.x,last.y,1.4,0,Math.PI*2); ctx.fill(); pts++; onChange&&onChange(true); });
+  canvas.addEventListener('pointermove',e=>{ if(!drawing) return; e.preventDefault();
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for(const ev of evs){ const p=pos(ev); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; grow(p); pts++; } });
+  const end=()=>{ drawing=false; }; canvas.addEventListener('pointerup',end); canvas.addEventListener('pointercancel',end); canvas.addEventListener('pointerleave',end);
+  setup(); const onR=()=>{ if(!canvas.isConnected) return removeEventListener('resize',onR); if(!pts) setup(); }; addEventListener('resize',onR);
+  return {
+    clear, isEmpty:()=>pts<6,
+    toPNG(){ // 裁切空白、縮小後輸出透明背景 PNG
+      const d=window.devicePixelRatio||1, pad=6;
+      const sx=Math.max(0,(box.x0-pad)*d), sy=Math.max(0,(box.y0-pad)*d);
+      const sw=Math.min(canvas.width-sx,(box.x1-box.x0+pad*2)*d), sh=Math.min(canvas.height-sy,(box.y1-box.y0+pad*2)*d);
+      for(const maxW of [520,420,320,240]){
+        const k=Math.min(1, maxW/sw, (maxW*0.4)/sh); const o=document.createElement('canvas');
+        o.width=Math.max(1,Math.round(sw*k)); o.height=Math.max(1,Math.round(sh*k));
+        o.getContext('2d').drawImage(canvas,sx,sy,sw,sh,0,0,o.width,o.height);
+        const url=o.toDataURL('image/png'); if(url.length<45000) return url;
+      }
+      throw new Error('簽名圖檔過大，請清除後再簽一次');
+    }
+  };
+}
+
+/* ================================================================
+   住戶報到頁
+   ================================================================ */
+const S = {ev:{}, token:params.get('t')||'', info:null, sel:null, mode:null, rel:null, q:'', err:'', busy:false, just:null, pad:null, signed:false, poll:null, voting:false};
+
+async function startCheckin(){
+  try{ S.info = await call('public',{t:S.token}); if(S.info.me) S.sel=S.info.me; }
+  catch(e){ $('#app').innerHTML=`<div class="wrap"><div class="err">${esc(e.message)}</div><button class="btn big" onclick="location.reload()">重新整理</button></div>`; return; }
+  renderCheckin();
+}
+const heroHTML = I => `<div class="hero"><h1>${esc(I.name||'社區')}<br>${esc(mtg(I))}</h1><p>會議日期：${esc(rocDate(I.date))}</p></div>`;
+function renderCheckin(){
+  const I=S.info, me=I.me, hero=heroHTML(I);
+  if(me && me.delegate){ $('#app').innerHTML=`<div class="wrap">${hero}<div class="card done"><div class="ic" style="background:#fff1e0;color:var(--warn)">⇄</div>
+      <h2>本戶已委託他人出席</h2><p style="font-size:19px;margin:6px 0">${esc(me.seq)}　${esc(me.name)}</p>
+      <p style="margin:10px 0 0">受託出席人：<b>${esc(me.delegate.seq)}　${esc(me.delegate.name)}</b></p>
+      <p class="hint" style="margin-top:12px">本戶的報到與投票，由受託出席人一併辦理，不需要另外操作。<br>如有疑問，請洽報到處工作人員。</p></div></div>`; return; }
+  if(me && me.done) return renderDone();
+  if(!I.open){ $('#app').innerHTML=`<div class="wrap">${hero}
+      <div class="card" style="text-align:center;padding:30px 16px"><div style="width:70px;height:70px;border-radius:50%;background:#eef0ee;display:grid;place-items:center;font-size:34px;margin:0 auto 12px">⏸</div>
+      <h2 style="justify-content:center">目前未開放報到</h2><p class="hint">報到將於會議當天、由報到處開放後開始。<br>開放後請重新掃描報到卡，或按下方按鈕。</p></div>
+      <button class="btn pri big" onclick="location.reload()">重新整理</button></div>`; return; }
+  if(!me && I.mode==='personal'){ $('#app').innerHTML=`<div class="wrap">${hero}
+      <div class="card" style="text-align:center;padding:26px 16px"><div style="font-size:44px">🔲</div><h2 style="justify-content:center">請掃描您家專屬的 QR Code</h2>
+      <p class="hint">本次會議採「每戶專屬 QR Code」報到，請用手機相機掃描管委會發給您的報到卡。<br>沒有帶報到卡，請洽報到處工作人員協助。</p></div></div>`; return; }
+  if(!me && !(I.residents||[]).length){ $('#app').innerHTML=`<div class="wrap">${hero}<div class="card">管理者尚未匯入住戶名冊。</div></div>`; return; }
+  const sel=S.sel, prs=me?me.principals:[];
+  $('#app').innerHTML=`<div class="wrap">
+    ${hero}
+    ${DEMO?'<div class="demo">示範模式：資料只會存在這個瀏覽器裡，其他手機看不到。正式使用前請依說明串接 Google 試算表。</div>':''}
+    ${S.err?`<div class="err" id="err">${esc(S.err)}</div>`:''}
+    <div class="card"><h2><span class="step">1</span>${me?'您的戶別':'選擇您的戶別'}</h2>
+      ${sel?`<div class="chosen"><span>${esc(sel.seq)}　${esc(sel.name)}</span>${me?'<span class="tag ok">專屬 QR</span>':'<button class="link" onclick="pick(null)">變更</button>'}</div>${me?'<p class="hint">如果這不是您家，請勿繼續，並洽報到處。</p>':''}`
+           :`<input class="inp" id="q" placeholder="輸入序號或姓名，例如 S1 或 王小明" value="${esc(S.q)}" autocomplete="off" oninput="S.q=this.value;drawList()"><div class="list" id="lst"></div>`}
+      ${prs.length?`<div style="margin-top:12px;background:#fff8ec;border:1px solid #fde3b8;border-radius:10px;padding:10px 12px;font-size:15px">
+        以下 ${prs.length} 戶委託您出席，您簽名一次即一併完成報到：<br><b>${prs.map(p=>esc(p.seq+' '+p.name)).join('、')}</b></div>`:''}
+    </div>
+    <div class="card"><h2><span class="step">2</span>是否委託出席${prs.length?'（本戶）':''}</h2>
+      <div class="seg"><button class="opt ${S.mode==='本人'?'on':''}" onclick="setMode('本人')">本人出席</button><button class="opt ${S.mode==='委託'?'on':''}" onclick="setMode('委託')">委託出席</button></div>
+      ${S.mode==='委託'?`<label class="f" style="margin-top:16px">委託關係（必選）</label><div class="rel">${REL.map(r=>`<button class="opt ${S.rel===r?'on':''}" onclick="setRel('${r}')">${S.rel===r?'◉':'○'}　${r}</button>`).join('')}</div><p class="hint">委託出席時，請由受託人簽名。</p>`:''}
+    </div>
+    <div class="card"><h2><span class="step">3</span>${S.mode==='委託'?'受託人':'本人'}簽名</h2>
+      <div class="sigbox"><canvas id="sig"></canvas><div class="base"></div><div class="ph" id="ph">請在框內簽名</div></div>
+      <div class="row"><span class="hint" style="margin:0">手機可橫放，簽名會比較好寫</span><button class="btn" onclick="S.pad.clear()">清除重簽</button></div>
+    </div>
+    <button class="btn pri big" id="go" onclick="submitCheckin()" ${S.busy?'disabled':''}>${S.busy?'<span class="spin"></span>　送出中…':'確認送出報到'}</button>
+    </div>`;
+  if(!sel) drawList();
+  S.signed=false;
+  S.pad = SigPad($('#sig'), has=>{ S.signed=has; const ph=$('#ph'); if(ph) ph.style.display=has?'none':''; });
+}
+function renderDone(){
+  const I=S.info, me=I.me, j=S.just, prs=me.principals.filter(p=>p.done);
+  $('#app').innerHTML=`<div class="wrap">${heroHTML(I)}
+    <div class="card done" style="padding:22px 10px"><div class="ic">✓</div><h2>${j?'報到完成':'已完成報到'}</h2>
+      <p style="font-size:19px;margin:6px 0">${esc(me.seq)}　${esc(me.name)}</p>
+      ${j?`<p style="color:var(--mute);margin:0">${j.mode==='本人'?'本人出席':'委託出席（'+esc(j.rel)+'）'}・${esc(hhmm(j.time))}</p>`:''}
+      ${prs.length?`<p style="margin:10px 0 0;font-size:15px">委託您出席（一併完成報到）：${prs.map(p=>esc(p.seq+' '+p.name)).join('、')}</p>`:''}
+      ${j?'<p class="hint" style="margin-top:12px">謝謝您，請入場就座。議題開放投票時，請在本頁投票。</p>':''}</div>
+    <div id="votes">${votesHTML()}</div>
+    <div id="elects">${electsHTML()}</div>
+    ${I.mode==='shared'?'<button class="btn big" style="margin-top:4px" onclick="resetCheckin()">下一位報到（換人使用這支手機）</button>':''}
+  </div>`;
+  startPoll();
+}
+function votesHTML(){
+  const I=S.info, me=I.me, w=1+me.principals.filter(p=>p.done).length;
+  const tps=I.topics||[];
+  return `<div class="card"><h2 style="justify-content:space-between">議題投票<button class="link" style="font-size:14px" onclick="pollNow(true)">重新整理</button></h2>
+    ${w>1?`<div style="background:var(--pri2);border-radius:10px;padding:9px 12px;font-size:15px;margin-bottom:10px">您的每一票代表 <b>${w} 戶</b>（本戶＋委託您出席的 ${w-1} 戶）</div>`:''}
+    ${tps.length?tps.map(t=>{ const v=me.votes[t.id];
+      return `<div class="topic"><div class="tt">第 ${esc(t.id)} 案　${esc(t.title)}</div>${t.desc?`<div class="hint" style="margin:4px 0 0">${esc(t.desc)}</div>`:''}
+        ${v?`<div class="voted ${v==='同意'?'y':'n'}">✓ 您已投「${esc(v)}」${w>1?`（${w} 票）`:''}</div>`
+           :`<div class="vbtn"><button class="vy" ${S.voting?'disabled':''} onclick="castVote('${esc(t.id)}','同意')">同意</button><button class="vn" ${S.voting?'disabled':''} onclick="castVote('${esc(t.id)}','不同意')">不同意</button></div>`}</div>`; }).join('')
+      :'<p class="hint" style="margin:0">目前沒有開放投票的議題。<br>主持人宣布開始投票後，本頁會自動顯示（約 15 秒內），也可按右上「重新整理」。</p>'}
+  </div>`;
+}
+async function pollNow(manual){
+  try{ const info=await call('public',{t:S.token}); S.info=info;
+    if(!info.me||!info.me.done||info.me.delegate){ stopPoll(); renderCheckin(); return; }
+    const box=$('#votes'); if(box && !S.voting) box.innerHTML=votesHTML();
+    const eb=$('#elects'), sig=elSig(); if(eb && (manual || sig!==S.elSig) && !eb.contains(document.activeElement)) eb.innerHTML=electsHTML();
+    if(manual) toast('已更新'); }
+  catch(e){ if(manual) toast(e.message); }
+}
+const elSig=()=>JSON.stringify(((S.info.me||{}).elections||[]).map(e=>[e.id,e.weight,e.picks,e.maxVotes]));
+const myEl=id=>((S.info.me||{}).elections||[]).find(e=>e.id===id);
+function electsHTML(){ S.elSig=elSig(); const els=(S.info.me||{}).elections||[];
+  return els.map(e=>{ const nm=seq=>{ const c=e.candidates.find(x=>x.seq===seq); return c?`${c.seq} ${c.name}`:seq; };
+    if(e.picks) return `<div class="card"><h2>${esc(e.name)}</h2><div class="voted y">✓ 已投票${e.total>1?`（代表 ${e.total} 戶）`:''}</div>
+      <p class="hint" style="margin-top:10px">您圈選：${e.picks.map(x=>esc(nm(x))).join('、')}</p></div>`;
+    const st=S.ev[e.id]=S.ev[e.id]||{picks:[],q:''};
+    return `<div class="card" id="ec_${esc(e.id)}"><h2>${esc(e.name)}</h2>
+      <div class="hint" style="margin:0 0 10px">每戶最多圈選 <b>${e.maxVotes}</b> 位${e.groups.length?`・範圍：${esc(e.groups.join('、'))}`:''}</div>
+      ${e.weight>1?`<div style="background:var(--pri2);border-radius:10px;padding:9px 12px;font-size:15px;margin-bottom:10px">您的選票代表 <b>${e.weight} 戶</b>（本戶＋委託您出席的戶）</div>`:''}
+      <div id="ep_${esc(e.id)}">${evPicked(e)}</div>
+      <input class="inp" placeholder="搜尋候選人序號或姓名" value="${esc(st.q)}" autocomplete="off" oninput="evQ('${esc(e.id)}',this.value)" style="margin-top:10px">
+      <div class="list" id="cl_${esc(e.id)}" style="max-height:340px">${evList(e)}</div></div>`; }).join(''); }
+function evPicked(e){ const st=S.ev[e.id], nm=seq=>{ const c=e.candidates.find(x=>x.seq===seq); return c?`${c.seq} ${c.name}`:seq; };
+  return `<div style="font-size:15px;margin-bottom:6px">已選 <b>${st.picks.length}</b> / ${e.maxVotes} 位</div>
+    <div>${st.picks.map(x=>`<span class="chip" style="background:var(--pri2);color:var(--pri)">${esc(nm(x))}<button onclick="evToggle('${esc(e.id)}','${esc(x)}')">×</button></span>`).join('')||'<span class="hint">請從下方名單勾選</span>'}</div>
+    <button class="btn pri big" style="margin-top:10px" onclick="castEvote('${esc(e.id)}')" ${st.picks.length?'':'disabled'}>送出選票（已選 ${st.picks.length} 位）</button>`; }
+function evList(e){ const st=S.ev[e.id], q=st.q.trim().toLowerCase(), full=st.picks.length>=e.maxVotes;
+  const list=e.candidates.filter(c=>!q||c.seq.toLowerCase().includes(q)||c.name.toLowerCase().includes(q));
+  return list.length?list.map(c=>{ const on=st.picks.includes(c.seq);
+    return `<button class="${on?'pk':''}" ${!on&&full?'disabled':''} onclick="evToggle('${esc(e.id)}','${esc(c.seq)}')"><span>${on?'☑':'☐'}　${esc(c.seq)}　${esc(c.name)}</span>${c.group?`<span class="tag">${esc(c.group)}</span>`:''}</button>`; }).join('')
+    :'<div style="padding:14px;color:#a0a8a5">找不到符合的候選人</div>'; }
+function evQ(id,v){ const e=myEl(id); if(!e) return; S.ev[id].q=v; $('#cl_'+id).innerHTML=evList(e); }
+function evToggle(id,seq){ const e=myEl(id); if(!e) return; const st=S.ev[id], i=st.picks.indexOf(seq);
+  if(i>=0) st.picks.splice(i,1); else if(st.picks.length<e.maxVotes) st.picks.push(seq); else return toast(`最多圈選 ${e.maxVotes} 位`);
+  const l=$('#cl_'+id), y=l.scrollTop; l.innerHTML=evList(e); l.scrollTop=y; $('#ep_'+id).innerHTML=evPicked(e); }
+async function castEvote(id){ const e=myEl(id); if(!e) return; const st=S.ev[id];
+  const names=st.picks.map(x=>{ const c=e.candidates.find(y=>y.seq===x); return c?`${c.seq} ${c.name}`:x; });
+  if(!confirm(`${e.name}\n\n您圈選了 ${names.length} 位：\n${names.join('\n')}${e.weight>1?`\n\n（這張選票代表 ${e.weight} 戶）`:''}\n\n送出後不能更改，確定送出嗎？`)) return;
+  try{ const r=await call('evote',{t:S.token,eid:id,picks:st.picks}); delete S.ev[id]; toast(`已投票（${r.count} 戶）`); await pollNow(false); $('#elects').innerHTML=electsHTML(); }
+  catch(e2){ alert(e2.message); await pollNow(false); } }
+function startPoll(){ stopPoll(); S.poll=setInterval(()=>{ if(document.visibilityState==='visible') pollNow(false); },15000); }
+function stopPoll(){ if(S.poll) clearInterval(S.poll); S.poll=null; }
+document.addEventListener('visibilitychange',()=>{ if(S.poll && document.visibilityState==='visible') pollNow(false); });
+async function castVote(id, v){
+  const t=(S.info.topics||[]).find(x=>x.id===id); const w=1+S.info.me.principals.filter(p=>p.done).length;
+  if(!confirm(`第 ${id} 案：${t?t.title:''}\n\n確定投下「${v}」嗎？${w>1?`\n（代表 ${w} 戶）`:''}\n\n送出後不能更改。`)) return;
+  S.voting=true; $('#votes').innerHTML=votesHTML();
+  try{ const r=await call('vote',{t:S.token, topic:id, v}); S.voting=false; toast(`已投票（${r.count} 票）`); await pollNow(false); }
+  catch(e){ S.voting=false; alert(e.message); await pollNow(false); }
+}
+function drawList(){
+  const q=S.q.trim().toLowerCase(), box=$('#lst'); if(!box) return;
+  if(!q){ box.innerHTML=`<div style="padding:14px;color:#a0a8a5;font-size:15px">請先輸入序號或姓名搜尋</div>`; return; }
+  const hits=S.info.residents.filter(r=>r.seq.toLowerCase().includes(q)||r.name.toLowerCase().includes(q)).slice(0,40);
+  box.innerHTML = hits.length ? hits.map(r=>`<button ${r.done||r.delegate?'disabled':''} onclick="pick('${esc(r.seq)}')"><span>${esc(r.seq)}　${esc(r.name)}</span>${r.done?'<span class="tag ok">已報到</span>':r.delegate?`<span class="tag px">已委託 ${esc(r.delegate)}</span>`:'<span class="tag">選擇</span>'}</button>`).join('')
+    : `<div style="padding:14px;color:#a0a8a5;font-size:15px">找不到符合的住戶，請洽報到處</div>`;
+}
+function pick(seq){ S.err=''; S.sel = seq ? S.info.residents.find(r=>r.seq===seq) : null; if(!seq) S.q=''; rerender(); }
+function setMode(m){ S.mode=m; if(m==='本人') S.rel=null; S.err=''; rerender(); }
+function setRel(r){ S.rel=r; S.err=''; rerender(); }
+let savedSig=null;
+function rerender(){ // 重繪畫面時保留已簽好的名
+  if(S.pad && !S.pad.isEmpty()){ try{ savedSig={png:S.pad.toPNG()}; }catch(e){} }
+  const y=scrollY; renderCheckin(); scrollTo(0,y);
+  if(savedSig && $('.sigbox')) showSavedSig();
+}
+function showSavedSig(){ // 已簽好的名以圖片顯示，可清除重簽
+  const box=$('.sigbox'); box.innerHTML=`<div style="height:210px;display:grid;place-items:center"><img src="${savedSig.png}" style="max-width:90%;max-height:180px"></div>`;
+  box.nextElementSibling.querySelector('button').onclick=()=>{ savedSig=null; renderCheckin(); };
+}
+function resetCheckin(){ stopPoll(); if(S.info.mode==='shared'){ S.token=''; history.replaceState(null,'',location.pathname); }
+  Object.assign(S,{sel:null,mode:null,rel:null,q:'',err:'',just:null}); savedSig=null; startCheckin(); }
+async function submitCheckin(){
+  const miss=[];
+  if(!S.sel) miss.push('戶別'); if(!S.mode) miss.push('是否委託出席'); if(S.mode==='委託'&&!S.rel) miss.push('委託關係');
+  const hasSig = savedSig || (S.pad && !S.pad.isEmpty()); if(!hasSig) miss.push('簽名');
+  if(miss.length){ S.err='尚未完成：'+miss.join('、'); rerender(); scrollTo({top:0,behavior:'smooth'}); return; }
+  let sig; try{ sig = savedSig ? savedSig.png : S.pad.toPNG(); }catch(e){ S.err=e.message; rerender(); return; }
+  savedSig={png:sig}; S.busy=true; S.err=''; rerender();
+  try{ const r = await call('checkin',{t:S.token, seq:S.sel.seq, mode:S.mode, rel:S.rel||'', sig});
+    S.just={mode:S.mode,rel:S.rel,time:r.time}; S.busy=false; savedSig=null;
+    if(!S.token && r.token){ S.token=r.token; history.replaceState(null,'','?t='+encodeURIComponent(r.token)); }  // 共用 QR 模式：記住身分以便投票
+    S.info = await call('public',{t:S.token}); renderCheckin(); scrollTo(0,0);
+  }catch(e){ S.busy=false; S.err=e.message; rerender(); scrollTo({top:0,behavior:'smooth'}); }
+}
+
+/* ================================================================
+   管理者頁
+   ================================================================ */
+const A = {dsel:'', dq:'', df:'all', pwd:sessionStorage.getItem('agm_pwd')||'', data:null, tab:'live', lq:'', pd:'', pq:'', pq2:'', upd:null, filter:'all', q:'', timer:null};
+
+function adminLogin(err){
+  $('#app').innerHTML=`<div class="wrap"><div class="hero"><h1>區權會報到系統</h1><p>管理者登入</p></div>
+   ${DEMO?'<div class="demo">示範模式預設密碼：1234（登入後可在「會議設定」修改）</div>':''}
+   ${err?`<div class="err">${esc(err)}</div>`:''}
+   <div class="card"><label class="f" style="margin-top:0">管理密碼</label><input class="inp" type="password" id="pw" onkeydown="if(event.key==='Enter')doLogin()">
+   <button class="btn pri big" style="margin-top:14px" onclick="doLogin()">登入</button></div>
+   <div class="foot"><a href="?">← 回到住戶報到頁</a></div></div>`;
+  setTimeout(()=>$('#pw')&&$('#pw').focus(),50);
+}
+async function doLogin(){ A.pwd=$('#pw').value; await loadAdmin(true); }
+async function loadAdmin(first){
+  try{ A.data = await call('admin',{pwd:A.pwd}); A.upd=new Date(); sessionStorage.setItem('agm_pwd',A.pwd); }
+  catch(e){ if(first||/密碼/.test(e.message)){ sessionStorage.removeItem('agm_pwd'); adminLogin(A.pwd?e.message:''); } else toast(e.message); return false; }
+  renderAdmin(); return true;
+}
+function stats(D){
+  const {config,residents,checkins}=D||A.data;
+  const total=residents.length, sumAll=residents.reduce((s,r)=>s+num(r.ratio),0);
+  const denom = config.denom ? num(config.denom) : sumAll;
+  let att=0,self=0,proxy=0,sumAtt=0;
+  residents.forEach(r=>{ const c=checkins[r.seq]; if(c){ att++; c.mode==='本人'?self++:proxy++; sumAtt+=num(r.ratio);} });
+  return {total,att,self,proxy,sumAtt,denom,denomStr:config.denom||fmtNum(sumAll)};
+}
+function renderAdmin(){
+  const {config,residents,checkins}=A.data, st=stats();
+  const tabs=[['live','現場'],['vote','議題投票'],['elect','委員選舉'],['detail','投票明細'],['proxy','委託歸戶'],['status','報到名單'],['sheet','簽到表'],['qr',ckMode(config)==='personal'?'住戶報到卡':'報到 QR Code'],['roster','名冊與議題'],['config','會議設定']];
+  let body='';
+  if(A.tab==='live'){
+    const on=!!config.open;
+    body=`<div class="card" style="border:2px solid ${on?'var(--ok)':'var(--line)'}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div><div style="font-size:20px;font-weight:700;color:${on?'var(--ok)':'var(--mute)'}">${on?'● 報到進行中':'○ 未開放報到'}</div>
+        <div class="hint" style="margin-top:4px">${on?'住戶現在可以掃 QR Code 報到':'住戶掃 QR Code 只會看到「目前未開放報到」'}</div></div>
+        <button class="btn ${on?'bad':'pri'}" style="padding:14px 18px;font-size:16px" onclick="setOpen(${!on})">${on?'關閉報到':'開放報到'}</button></div></div>
+      <div class="livegrid"><div>
+      <div id="live">${liveHTML()}</div></div><div>
+      <div class="card" style="margin-top:14px"><h2>會場投影</h2>
+        <p class="hint" style="margin-top:0">會議室電腦開啟下方網址、輸入投影密碼，按 F 全螢幕。投影只顯示統計數字（不含個別住戶投票內容）；要投影什麼，由這裡切換，數秒內同步。</p>
+        <div class="url" style="margin-top:8px">${esc(showURL())}</div>
+        <div class="grid2" style="margin-top:10px"><button class="btn" onclick="navigator.clipboard.writeText(showURL()).then(()=>toast('已複製投影網址'),()=>prompt('請複製',showURL()))">複製投影網址</button><button class="btn pri" onclick="openShow()">在這台電腦開啟</button></div>
+        ${config.hasShowPwd?'':'<p class="hint">尚未設定投影密碼，目前投影端須輸入管理密碼。建議到「會議設定」另設投影密碼。</p>'}
+        <div class="showpick">${showPickHTML()}</div></div>
+      <div id="vctl">${voteCtlHTML()}</div>
+      <div class="card" style="margin-top:14px"><h2>現場產生住戶 QR Code</h2>
+        <input class="inp" id="lq" placeholder="輸入序號或姓名，例如 S1 或 王小明" value="${esc(A.lq)}" autocomplete="off" oninput="A.lq=this.value;drawLQ()">
+        <div class="list" id="lql"></div>
+        <p class="hint">住戶忘了帶報到卡：搜尋他的戶別 → 按「產生 QR」→ 讓住戶用自己的手機掃，或直接在這支手機幫他報到。</p></div></div></div>`;
+  }
+  if(A.tab==='vote'){
+    const tps=A.data.topics||[];
+    const tagOf={pending:'<span class="tag">未開放</span>',open:'<span class="tag ok">● 投票中</span>',closed:'<span class="tag" style="background:#1d2321;color:#fff">已結束</span>'};
+    const vb=voteBy(config);
+    body=`${tps.length?`<div class="card"><h2>匯出 PDF</h2><p class="hint" style="margin-top:0">議題表決結果（A4、自動頁碼，附主席／記錄／監票簽名欄）。</p>
+      <label class="ck"><input type="checkbox" id="px_vd" checked> 附各戶投票明細（驗票用）</label>
+      <button class="btn pri big" style="margin-top:10px" onclick="printTopics()">預覽並列印 / 存成 PDF</button></div>`:''}
+    <div class="card"><h2>計票方式</h2><div class="seg">${['ratio','count'].map(k=>`<button class="opt ${vb===k?'on':''}" onclick="setVoteBy('${k}')">${VB_TXT[k]}</button>`).join('')}</div>
+      <p class="hint">選定後，各議題的計票結果與長條圖都依此方式計算；另一種方式的數字仍列在表格中供參考。</p></div>
+    ${tps.length?'':'<div class="card">尚無議題。請到「名冊與議題」匯入 Excel，或在下方直接新增。</div>'}
+    ${tps.map(t=>{ const T=tally(t.id), id=esc(t.id);
+      const btn=t.status==='open'?`<button class="btn bad" onclick="setTopicSt('${id}','closed')">結束投票</button>`
+        :t.status==='pending'?`<button class="btn pri" onclick="setTopicSt('${id}','open')">開放投票</button>`:`<button class="btn" onclick="setTopicSt('${id}','open')">重新開放</button>`;
+      return `<div class="card" style="${t.status==='open'?'border:2px solid var(--ok)':''}">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div style="min-width:0"><div style="font-size:17px;font-weight:700;line-height:1.4">第 ${id} 案　${esc(t.title)}</div>
+        ${t.desc?`<div class="hint" style="margin:4px 0 0">${esc(t.desc)}</div>`:''}<div style="margin-top:8px">${tagOf[t.status]}</div></div>${btn}</div>
+        ${passRow(t)}
+        ${(t.status!=='pending'||T.y+T.n)?tallyHTML(T,t):''}</div>`; }).join('')}
+    <div class="card"><h2>新增議題（臨時動議）</h2><input class="inp" id="nt_t" placeholder="議題名稱"><input class="inp" id="nt_d" placeholder="說明（選填）" style="margin-top:8px">
+      <label class="f">通過門檻</label><select class="inp" id="nt_p">${PASS_PRESETS.map(x=>`<option>${x}</option>`).join('')}<option value="__c">自訂…</option></select>
+      <button class="btn pri" style="margin-top:10px" onclick="addTopicUI()">新增議題</button></div>`;
+  }
+  if(A.tab==='elect'){
+    const els=A.data.elections||[], groups=[...new Set(residents.map(r=>r.group).filter(Boolean))];
+    const tagOf={pending:'<span class="tag">未開放</span>',open:'<span class="tag ok">● 投票中</span>',closed:'<span class="tag" style="background:#1d2321;color:#fff">已結束</span>'};
+    body=`${els.length?`<div class="card"><h2>匯出 PDF</h2><p class="hint" style="margin-top:0">委員選舉結果（A4、自動頁碼，附主席／記錄／監票簽名欄）。</p>
+      ${els.length>1?`<div class="gchk" style="margin:4px 0 8px">${els.map(e=>`<label><input type="checkbox" class="px_e" value="${esc(e.id)}" checked> ${esc(e.name)}</label>`).join('')}</div>`:''}
+      <label class="ck"><input type="radio" name="px_r" value="top" checked> 只列前 N 名（含同票者）</label>
+      <label class="ck"><input type="radio" name="px_r" value="all"> 列出全部得票者</label>
+      <label class="ck"><input type="checkbox" id="px_ed"> 附選票明細（每戶圈選內容，驗票用）</label>
+      <button class="btn pri big" style="margin-top:10px" onclick="printElections()">預覽並列印 / 存成 PDF</button></div>`:'<div class="card">尚未建立選舉。請在下方「新增選舉」。</div>'}
+    ${els.map(e=>electionCard(e,groups,tagOf)).join('')}
+    <div class="card"><h2>新增選舉</h2>
+      <label class="f" style="margin-top:0">選舉名稱</label><input class="inp" id="ne_n" value="管理委員選舉">
+      ${groups.length?`<label class="f">範圍（棟別）：不勾＝全體住戶</label><div class="gchk">${groups.map(g=>`<label><input type="checkbox" class="ne_g" value="${esc(g)}"> ${esc(g)}（${residents.filter(r=>r.group===g).length} 戶）</label>`).join('')}</div>`
+        :'<p class="hint">名冊沒有「棟別」欄，這場選舉為全體住戶。若要依棟別或店面分開選，請在 Excel 住戶名冊加「棟別」欄後重新匯入。</p>'}
+      <div class="grid2"><div><label class="f">每戶可投幾票</label><input class="inp" id="ne_v" type="number" min="1" value="5" inputmode="numeric"></div>
+      <div><label class="f">取前幾名</label><input class="inp" id="ne_t" type="number" min="1" value="20" inputmode="numeric"></div></div>
+      <button class="btn pri big" style="margin-top:14px" onclick="addElectionUI()">新增選舉</button></div>`;
+  }
+  if(A.tab==='detail'){
+    const items=detailItems();
+    if(!items.length) body='<div class="card">尚無議題或選舉。</div>';
+    else { if(!items.find(x=>x[0]===A.dsel)) A.dsel=(items.find(x=>x[2]==='open')||items[0])[0];
+      body=`<div class="card"><h2>每戶投票狀況</h2>
+        <select class="inp" onchange="A.dsel=this.value;A.df='all';renderAdmin()">${items.map(([k,l,st])=>`<option value="${esc(k)}" ${A.dsel===k?'selected':''}>${esc(l)}${st==='open'?'（投票中）':st==='closed'?'（已結束）':''}</option>`).join('')}</select>
+        <div id="dsum" style="margin-top:12px">${detailSum()}</div>
+        <input class="inp" style="margin-top:10px" placeholder="搜尋序號或姓名" value="${esc(A.dq)}" autocomplete="off" oninput="A.dq=this.value;drawDetail()">
+        <div id="dl" style="margin-top:8px">${detailList()}</div></div>`; }
+  }
+  if(A.tab==='proxy'){
+    const prOf=s=>residents.filter(x=>x.delegate===s), groups=residents.filter(r=>prOf(r.seq).length), d=A.pd&&residents.find(r=>r.seq===A.pd);
+    body=`<div class="card"><h2>新增委託歸戶</h2>
+      <p class="hint" style="margin-top:0">多戶委託同一位住戶出席時，把委託戶歸到受託戶底下：受託戶本人出席、報到時<b>簽名一次</b>，委託戶就一併完成報到；投票時<b>一票代表全部</b>（例：本戶＋3 戶委託＝4 票）。</p>
+      <label class="f">① 受託戶（受委託出席的住戶，須為名冊中的住戶）</label>
+      ${d?`<div class="chosen"><span>${esc(d.seq)}　${esc(d.name)}</span><button class="link" onclick="A.pd='';A.pq='';renderAdmin()">變更</button></div>
+        <label class="f">② 加入委託戶（搜尋後點選）</label><input class="inp" id="pq2" placeholder="輸入序號或姓名" value="${esc(A.pq2)}" autocomplete="off" oninput="A.pq2=this.value;drawPQ2()"><div class="list" id="pql2"></div>
+        ${prOf(d.seq).length?groupHTML(d):'<p class="hint">尚未加入委託戶。</p>'}`
+       :`<input class="inp" id="pq" placeholder="輸入受託戶的序號或姓名" value="${esc(A.pq)}" autocomplete="off" oninput="A.pq=this.value;drawPQ()"><div class="list" id="pql"></div>`}
+    </div>
+    <div class="card"><h2>目前歸戶（${groups.length} 組）</h2>${groups.length?groups.map(g=>groupHTML(g,true)).join(''):'<p class="hint" style="margin:0">尚無委託歸戶。</p>'}</div>`;
+  }
+  if(A.tab==='status'){
+    const rows=residents.filter(r=>{ const c=checkins[r.seq];
+      if(A.filter==='done'&&!c) return false; if(A.filter==='todo'&&c) return false;
+      const q=A.q.trim().toLowerCase(); return !q||r.seq.toLowerCase().includes(q)||r.name.toLowerCase().includes(q); });
+    body=`<div class="stats">
+      <div class="stat"><span>應出席戶數</span><b>${st.total}</b></div>
+      <div class="stat"><span>已報到（本人 ${st.self}／委託 ${st.proxy}）</span><b>${st.att}</b></div>
+      <div class="stat"><span>出席率（人數）</span><b>${pct(st.att,st.total)}</b><div class="bar"><i style="width:${st.total?st.att/st.total*100:0}%"></i></div></div>
+      <div class="stat"><span>出席率（區分所有權比例）</span><b>${pct(st.sumAtt,st.denom)}</b><div class="bar"><i style="width:${st.denom?Math.min(100,st.sumAtt/st.denom*100):0}%"></i></div><span>${fmtNum(st.sumAtt)} / ${esc(st.denomStr)}</span></div>
+    </div>
+    <div class="filters"><input class="inp" placeholder="搜尋序號或姓名" value="${esc(A.q)}" oninput="A.q=this.value;renderAdminKeep()">
+      <select onchange="A.filter=this.value;renderAdmin()"><option value="all">全部</option><option value="done" ${A.filter==='done'?'selected':''}>已報到</option><option value="todo" ${A.filter==='todo'?'selected':''}>未報到</option></select>
+      <button class="btn" onclick="refresh()">重新整理</button></div>
+    <div class="scroll"><table class="tb"><thead><tr><th>序號</th><th>姓名</th><th>出席</th><th>簽名</th><th>時間</th><th></th></tr></thead><tbody>
+    ${rows.map(r=>{const c=checkins[r.seq]; return `<tr><td>${esc(r.seq)}</td><td>${esc(r.name)}</td>
+      <td>${c?(c.via?`<span class="tag px">委託 ${esc(c.via)} 出席</span>`:c.mode==='本人'?'<span class="tag ok">本人</span>':`<span class="tag px">委託・${esc(c.rel)}</span>`):r.delegate?`<span class="tag px">已委託 ${esc(r.delegate)}</span>`:'<span class="tag">未報到</span>'}</td>
+      <td>${c?`<img src="${c.sig}">`:''}</td><td style="font-size:13px;color:var(--mute)">${c?esc(hhmm(c.time)):''}</td>
+      <td>${c?(c.via?'':`<button class="link" style="color:var(--bad)" onclick="revoke('${esc(r.seq)}')">撤銷</button>`):r.delegate?'':`<button class="link" onclick="showOneQR('${esc(r.seq)}')">產生 QR</button>`}</td></tr>`}).join('') || '<tr><td colspan="6" style="color:var(--mute);padding:18px">沒有資料</td></tr>'}
+    </tbody></table></div>`;
+  }
+  if(A.tab==='config'){
+    const sumAll=residents.reduce((s,r)=>s+num(r.ratio),0);
+    body=`<div class="card">
+      <label class="f" style="margin-top:0">社區名稱（會顯示在簽到表標題）</label><input class="inp" id="c_name" oninput="prevTitle()" value="${esc(config.name)}" placeholder="例如：○○社區管理委員會">
+      <label class="f">會議名稱</label><input class="inp" id="c_mtg" value="${esc(config.meeting||DEF_MEETING)}" oninput="prevTitle()">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${['區分所有權人會議','區分所有權人臨時會議','區分所有權人會議（第二次召集）'].map(t=>`<button class="btn" style="padding:8px 12px;font-size:14px" onclick="$('#c_mtg').value='${t}';prevTitle()">${t}</button>`).join('')}</div>
+      <p class="hint">可以自己改字，例如「第5屆區分所有權人會議」。住戶報到頁、QR 海報、簽到表都會跟著改。</p>
+      <label class="f">簽到表標題預覽</label><div class="url" id="c_prev" style="font-size:15px;color:var(--ink)"></div>
+      <label class="f">自訂完整標題（選填，標題要整句改寫時才填）</label><input class="inp" id="c_title" value="${esc(config.title||'')}" placeholder="留空 = 社區名稱＋會議名稱＋出席人員名冊（簽到簿）" oninput="prevTitle()">
+      <label class="f">會議日期</label><input class="inp" type="date" id="c_date" value="${esc(config.date)}" oninput="$('#c_roc').textContent=rocDate(this.value)"><p class="hint">簽到表會顯示為民國年：<span id="c_roc">${esc(rocDate(config.date))}</span></p>
+      <label class="f">投票計票方式</label>
+      <div class="seg">${['ratio','count'].map(k=>`<button class="opt ${voteBy(config)===k?'on':''}" data-vb="${k}" onclick="document.querySelectorAll('[data-vb]').forEach(b=>b.classList.toggle('on',b===this))">${VB_TXT[k]}</button>`).join('')}</div>
+      <label class="f">報到方式</label>
+      <div class="rel" style="margin-top:0">${[['personal','每戶專屬 QR Code（建議）','每戶一張報到卡，掃了直接鎖定戶別，不會選錯'],['shared','共用一個 QR Code','報到處貼一張 QR，住戶自己搜尋序號或姓名']].map(([k,t,d])=>`<button class="opt ${ckMode(config)===k?'on':''}" data-m="${k}" onclick="document.querySelectorAll('[data-m]').forEach(b=>b.classList.toggle('on',b===this))">${ckMode(config)===k?'◉':'○'}　${t}<div style="font-size:13px;color:var(--mute);font-weight:400;margin:4px 0 0 26px">${d}</div></button>`).join('')}</div>
+      <label class="f">區分所有權比例分母（總比例）</label><input class="inp" id="c_den" value="${esc(config.denom)}" placeholder="留空 = 自動加總名冊比例（目前 ${fmtNum(sumAll)}）" inputmode="decimal">
+      <label class="f">投影密碼（會議室電腦開投影畫面用，只能看統計、不能操作；不改請留空）</label><input class="inp" id="c_spw" type="text" autocomplete="off" placeholder="${config.hasShowPwd?'已設定（輸入新密碼可變更）':'尚未設定'}">
+      <label class="f">變更管理密碼（不改請留空）</label><input class="inp" id="c_pwd" type="password" autocomplete="new-password">
+      <button class="btn pri big" style="margin-top:16px" onclick="saveCfg()">儲存設定</button></div>`;
+  }
+  if(A.tab==='roster'){
+    const tps=A.data.topics||[], stTxt={pending:'未開放',open:'投票中',closed:'已結束'};
+    body=`<div class="card"><h2>匯入 Excel（住戶名冊＋議題）</h2>
+      <p class="hint" style="margin-top:0">同一個 Excel 檔、兩個工作表：<br>．<b>住戶名冊</b>：序號、姓名、區分所有權比例、受託戶序號（選填）、棟別（選填，例：A棟、B棟、店面，委員選舉可依此分開投票）<br>．<b>議題</b>：編號、議題、說明（選填）、通過門檻（選填，預設過半數）<br>只放其中一個工作表也可以，有哪個就匯入哪個。比例可寫「61.07」或「61.07/4476.74」。</p>
+      <div class="grid2" style="margin-top:12px"><label class="btn pri" style="margin:0">選擇 Excel 檔<input type="file" accept=".xlsx,.xls" hidden onchange="importFile(this.files[0]);this.value=''"></label>
+      <button class="btn" onclick="sampleXlsx()">${residents.length||tps.length?'匯出範本（含目前資料）':'下載空白範本'}</button></div></div>
+      <div class="card"><h2>議題（${tps.length} 案）</h2>
+      ${tps.length?`<div class="scroll"><table class="tb"><thead><tr><th>編號</th><th>議題</th><th>通過門檻</th><th>狀態</th></tr></thead><tbody>${tps.map(t=>`<tr><td>${esc(t.id)}</td><td style="white-space:normal">${esc(t.title)}</td><td>${esc((parsePass(t.pass)||{}).label||PASS_DEF)}</td><td>${stTxt[t.status]}</td></tr>`).join('')}</tbody></table></div>`:'<p class="hint" style="margin:0">尚未匯入議題</p>'}</div>
+      <div class="card"><h2>目前名冊（${residents.length} 戶）</h2>
+      <div class="scroll"><table class="tb"><thead><tr><th>序號</th><th>姓名</th><th>區分所有權比例</th><th>受託戶</th><th>棟別</th></tr></thead><tbody>
+      ${residents.map(r=>`<tr><td>${esc(r.seq)}</td><td>${esc(r.name)}</td><td>${esc(r.ratio)}/${esc(st.denomStr)}</td><td>${esc(r.delegate||'')}</td><td>${esc(r.group||'')}</td></tr>`).join('')||'<tr><td colspan="5" style="color:var(--mute);padding:18px">尚未匯入</td></tr>'}
+      </tbody></table></div></div>
+      <div class="card"><h2>清除資料</h2><p class="hint" style="margin-top:0">會議結束、要準備下一次會議時使用。</p>
+      <button class="btn bad" style="margin-top:10px" onclick="clearAll()">清除所有報到紀錄、簽名與投票結果</button></div>`;
+  }
+  if(A.tab==='qr'){
+    const url=checkinURL();
+    if(ckMode(config)==='personal') body=`<div class="card"><h2>每戶專屬 QR Code 報到卡</h2>
+      <p class="hint" style="margin-top:0">每戶一張，卡片上印有序號、姓名和該戶專屬 QR Code。住戶掃描後直接鎖定自己的戶別，不用選、也不會選錯；別戶的卡片也無法冒用（每張卡的代碼都是隨機產生的）。</p>
+      <div class="stats" style="margin-top:12px"><div class="stat"><span>可列印卡片</span><b>${residents.length} 張</b></div><div class="stat"><span>每頁 12 張（A4）</span><b>${Math.ceil(residents.length/12)} 頁</b></div></div>
+      <button class="btn pri big" style="margin-top:14px" onclick="printCards(false)">列印全部住戶報到卡</button>
+      <button class="btn big" style="margin-top:10px" onclick="printCards(true)">只印「未報到」的住戶</button>
+      <p class="hint">住戶忘了帶卡：到「報到狀況」找到該戶按「QR」，用工作人員的手機直接幫他開啟報到頁。</p></div>
+      <div class="card"><h2>重新產生代碼</h2><p class="hint" style="margin-top:0">下一次開會、或報到卡外流時使用。按下後<b>舊卡片全部失效</b>，要重新列印發送。</p>
+      <button class="btn bad" style="margin-top:10px" onclick="regen()">重新產生全部代碼</button></div>
+      ${DEMO?'<div class="demo">示範模式下，別支手機掃描報到卡會看到它自己的空白資料。正式串接 Google 試算表、放上網址後才能多支手機共用。</div>':''}`;
+    else body=`<div class="card"><h2>住戶掃描這個 QR Code 進入報到</h2><div class="qr"><img id="qrimg" alt="QR"></div>
+      <div class="url">${esc(url)}</div>
+      ${DEMO?'<p class="hint">示範模式下，別支手機掃描後看到的是它自己的空白資料。正式串接 Google 試算表、放上網址後，所有手機才會寫進同一份名冊。</p>':''}
+      <div class="grid2" style="margin-top:12px"><button class="btn" onclick="copyURL()">複製網址</button><button class="btn pri" onclick="printPoster()">列印 QR 海報</button></div></div>`;
+  }
+  if(A.tab==='sheet'){
+    body=`<div class="card"><h2>產生簽到表</h2>
+      <p class="hint" style="margin-top:0">版面比照 Word 模板：A4 直式、第一頁有標題與會議日期、每頁下方自動帶頁碼，最後一頁附出席數與出席率統計。</p>
+      <div class="stats" style="margin-top:12px"><div class="stat"><span>出席數</span><b>${st.att} / ${st.total}</b></div><div class="stat"><span>出席率（比例）</span><b>${pct(st.sumAtt,st.denom)}</b></div></div>
+      <button class="btn pri big" style="margin-top:14px" onclick="openSheet()">預覽並列印 / 存成 PDF</button>
+      <button class="btn big" style="margin-top:10px" onclick="exportXlsx()">匯出報到與投票結果 Excel</button></div>
+    <div class="card"><h2>驗票資料（Google 試算表）</h2>
+      <p class="hint" style="margin-top:0">在 Google 試算表產生／更新兩個工作表：<b>「驗票總表」</b>每戶一列（出席、委託、簽名、各議題意見、各選舉圈選），<b>「計票結果」</b>各議題與各選舉的統計。住戶要驗票時，直接查他那一列即可。<br>每次按「結束投票」也會自動更新；在試算表上方選單「區權會」也能手動更新。</p>
+      ${DEMO?'<div class="demo" style="margin:10px 0 0">示範模式沒有 Google 試算表。可以先按上方「匯出報到與投票結果 Excel」，裡面有同樣的「驗票總表」。</div>'
+        :'<button class="btn pri big" style="margin-top:12px" onclick="syncAudit(this)">更新試算表驗票總表</button>'}</div>`;
+  }
+  $('#app').innerHTML=`<div class="wrap wide">
+    <div class="hero"><h1>${esc(config.name||'（尚未設定社區名稱）')}</h1><p>${esc(mtg(config))}・${esc(rocDate(config.date))}・報到管理</p></div>
+    ${DEMO?'<div class="demo">示範模式：資料只存在這個瀏覽器。</div>':''}
+    <div class="tabs">${tabs.map(([k,t])=>`<button class="${A.tab===k?'on':''}" onclick="goTab('${k}')">${t}</button>`).join('')}</div>
+    ${body}
+    <div class="foot"><a href="?">住戶報到頁</a>　·　<a href="#" onclick="sessionStorage.removeItem('agm_pwd');location.reload();return false">登出</a></div></div>`;
+  if(A.tab==='qr') drawQR();
+  if(A.tab==='live') drawLQ();
+  if(A.tab==='proxy'){ drawPQ(); drawPQ2(); }
+  if(A.tab==='config') prevTitle();
+}
+function prevTitle(){ const el=$('#c_prev'); if(el) el.textContent=sheetTitle({name:$('#c_name').value.trim(),meeting:$('#c_mtg').value.trim(),title:$('#c_title').value.trim()}); }
+function liveHTML(){ const st=stats(), {residents,checkins}=A.data;
+  const recent=Object.entries(checkins).sort((a,b)=>String(b[1].time).localeCompare(String(a[1].time))).slice(0,5);
+  const nm=seq=>(residents.find(r=>r.seq===seq)||{}).name||'';
+  return `<div class="stats">
+    <div class="stat"><span>已報到 / 應出席</span><b>${st.att} / ${st.total}</b><span>本人 ${st.self}・委託 ${st.proxy}</span></div>
+    <div class="stat"><span>未報到</span><b>${st.total-st.att}</b></div>
+    <div class="stat"><span>出席率（人數）</span><b>${pct(st.att,st.total)}</b><div class="bar"><i style="width:${st.total?st.att/st.total*100:0}%"></i></div></div>
+    <div class="stat"><span>出席率（區分所有權比例）</span><b>${pct(st.sumAtt,st.denom)}</b><div class="bar"><i style="width:${st.denom?Math.min(100,st.sumAtt/st.denom*100):0}%"></i></div><span>${fmtNum(st.sumAtt)} / ${esc(st.denomStr)}</span></div></div>
+  <div class="card" style="margin:14px 0 0"><h2 style="justify-content:space-between">最新報到<span class="hint" style="margin:0;font-weight:400;font-size:13px">${A.upd?A.upd.toLocaleTimeString('zh-TW',{hour12:false}):''} 更新・每 10 秒自動更新</span></h2>
+  ${recent.length?recent.map(([seq,c])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line)"><span>${esc(seq)}　${esc(nm(seq))}</span><span>${c.mode==='本人'?'<span class="tag ok">本人</span>':'<span class="tag px">委託</span>'} <span class="hint" style="margin-left:6px">${esc(hhmm(c.time).slice(-5))}</span></span></div>`).join(''):'<div class="hint" style="margin:0">尚無人報到</div>'}</div>`; }
+/* ================= 投影：管理端控制 ================= */
+function showItems(){ const T=A.data.topics||[], E=A.data.elections||[];
+  return [['auto','自動'],['att','出席統計'],...T.map(t=>['t:'+t.id,'第'+t.id+'案']),...E.map(e=>['e:'+e.id,e.name])]; }
+function showPickHTML(){ const v=A.data.config.showView||'auto';
+  return `<div class="hint" style="margin:12px 0 6px">目前投影內容（「自動」：有議題投票中就顯示該議題，其次是投票中的選舉，否則顯示出席統計）</div>
+  <div class="chips">${showItems().map(([k,l])=>`<button class="${v===k?'on':''}" onclick="setShow('${esc(k)}')">${esc(l)}</button>`).join('')}</div>`; }
+async function setShow(k){ try{ await call('setShowView',{pwd:A.pwd,view:k}); A.data.config.showView=k; const b=$('.showpick'); if(b) b.innerHTML=showPickHTML(); toast('投影畫面已切換（數秒內更新）'); }catch(e){ toast(e.message); } }
+function showURL(){ return checkinURL()+'?p=show'; }
+function openShow(){ const w=window.open(showURL(),'agm_show','width=1280,height=720'); if(!w) alert('瀏覽器擋下了彈出視窗。也可以在會議室電腦直接開啟：\n'+showURL()); }
+
+/* ================= 投影頁（p=show） ================= */
+const SH={code:'', data:null, timer:null};
+function showLogin(err){
+  $('#app').innerHTML=`<div class="wrap" style="max-width:460px;padding-top:8vh"><div class="hero"><h1>區權會　投影畫面</h1><p>會議室螢幕專用・只顯示統計結果</p></div>
+   ${err?`<div class="err">${esc(err)}</div>`:''}
+   <div class="card"><label class="f" style="margin-top:0">投影密碼（未另外設定時，使用管理密碼）</label><input class="inp" type="password" id="spw" onkeydown="if(event.key==='Enter')showGo()">
+   <label class="ck" style="margin-top:12px"><input type="checkbox" id="srm" checked> 這台電腦記住密碼（會議室專用電腦）</label>
+   <button class="btn pri big" style="margin-top:12px" onclick="showGo()">開始投影</button></div></div>`;
+  setTimeout(()=>$('#spw')&&$('#spw').focus(),50); }
+async function showGo(){ SH.code=$('#spw').value; const keep=$('#srm').checked;
+  try{ SH.data=await call('show',{code:SH.code}); }catch(e){ return showLogin(e.message); }
+  try{ (keep?localStorage:sessionStorage).setItem('agm_show_code',SH.code); }catch(e){}
+  startShow(); }
+function startShow(){ document.body.classList.add('showmode'); renderShow(); setInterval(tick,1000);
+  SH.timer=setInterval(showPoll, DEMO?2500:4000);
+  addEventListener('storage',ev=>{ if(DEMO && ev.key===LS) showPoll(); });
+  let t; addEventListener('mousemove',()=>{ document.body.classList.add('navon'); clearTimeout(t); t=setTimeout(()=>document.body.classList.remove('navon'),2500); });
+  addEventListener('keydown',ev=>{ if(ev.key==='f'||ev.key==='F') toggleFS(); }); }
+async function showPoll(){ try{ SH.data=await call('show',{code:SH.code}); $('#app .show')?updateShow():renderShow(); }
+  catch(e){ if(/密碼/.test(e.message)){ clearInterval(SH.timer); try{ localStorage.removeItem('agm_show_code'); sessionStorage.removeItem('agm_show_code'); }catch(_){} showLogin(e.message); } } }
+function resolveView(D){ let v=D.view||'auto';
+  if(v==='auto'){ const t=D.topics.find(x=>x.status==='open'), e=D.elections.find(x=>x.status==='open'); v=t?'t:'+t.id:e?'e:'+e.id:'att'; }
+  if(v.startsWith('t:') && !D.topics.find(x=>x.id===v.slice(2))) v='att';
+  if(v.startsWith('e:') && !D.elections.find(x=>x.id===v.slice(2))) v='att';
+  return v; }
+function showBody(D){ const v=resolveView(D);
+  if(v.startsWith('t:')) return showTopic(D, D.topics.find(x=>x.id===v.slice(2)));
+  if(v.startsWith('e:')) return showElection(D, D.elections.find(x=>x.id===v.slice(2)));
+  return showAtt(D); }
+function renderShow(){ const D=SH.data; document.title='投影｜'+(D.name||'區權會');
+  $('#app').innerHTML=`<div class="show"><header><div><b>${esc(D.name)}</b>　${esc(D.meeting||DEF_MEETING)}</div><div>${esc(rocDate(D.date))}　<span id="clk"></span></div></header>
+    <main id="smain">${showBody(D)}</main>
+    <nav class="snav"><button onclick="toggleFS()">⛶ 全螢幕（F）</button><span class="snote">畫面內容由管理者手機切換・每數秒自動更新</span></nav></div>`;
+  tick(); }
+function updateShow(){ const m=$('#smain'), h=showBody(SH.data); if(m && m.innerHTML!==h) m.innerHTML=h; }
+function tick(){ const e=$('#clk'); if(e) e.textContent=new Date().toLocaleTimeString('zh-TW',{hour12:false}); }
+function toggleFS(){ try{ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen(); }catch(e){} }
+function showAtt(D){ const st=D.att, w=(a,b)=>b?Math.min(100,a/b*100):0;
+  return `<div class="s-sub">${D.open?'<span class="s-live">● 報到進行中</span>':'報到統計'}</div><div class="s-title">出席統計</div>
+  <div class="kpis">
+    <div class="kpi"><div class="kl">已報到</div><div class="kv">${st.att}<small> / ${st.total} 戶</small></div><div class="kb"><i style="width:${w(st.att,st.total)}%"></i></div><div class="ks">本人 ${st.self} 戶・委託 ${st.proxy} 戶</div></div>
+    <div class="kpi"><div class="kl">出席率（人數）</div><div class="kv">${pct(st.att,st.total)}</div><div class="kb"><i style="width:${w(st.att,st.total)}%"></i></div><div class="ks">未報到 ${st.total-st.att} 戶</div></div>
+    <div class="kpi"><div class="kl">出席率（區分所有權比例）</div><div class="kv">${pct(st.sumAtt,st.denom)}</div><div class="kb"><i style="width:${w(st.sumAtt,st.denom)}%"></i></div><div class="ks">${fmtNum(st.sumAtt)} / ${esc(st.denomStr)}</div></div>
+  </div>`; }
+function showTopic(D,x){ const vb=D.voteBy, R=vb==='ratio', J=judge(x,x,vb), w=(a,b)=>b?Math.min(100,a/b*100):0;
+  const y=R?x.yr:x.y, n=R?x.nr:x.n, u=R?x.uR:x.uN, att=R?x.attR:x.attN, sub=(r,cn)=>R?`${cn} 票・比例 ${fmtNum(r)}`:`${cn} 票`;
+  const verd=x.status==='closed'?`<div class="verd ${J.ok?'ok':'bad'}">${J.ok?'✔ 通過':'✘ 未通過'}</div>`
+    :x.status==='open'?`<div class="verd live">● 投票進行中　<small>已投 ${x.y+x.n} 票，目前${J.ok?'已達':'未達'}門檻</small></div>`:'<div class="verd wait">尚未開放投票</div>';
+  return `<div class="s-sub">議題表決・第 ${esc(x.id)} 案</div><div class="s-title">${esc(x.title)}</div>${x.desc?`<div class="s-desc">${esc(x.desc)}</div>`:''}
+  <div class="vbig"><div class="vb y"><span>同意</span><b>${pct(y,att)}</b><em>${sub(x.yr,x.y)}</em></div><div class="vb n"><span>不同意</span><b>${pct(n,att)}</b><em>${sub(x.nr,x.n)}</em></div><div class="vb u"><span>未投票</span><b>${pct(u,att)}</b><em>${R?`${x.uN} 戶・比例 ${fmtNum(x.uR)}`:`${x.uN} 戶`}</em></div></div>
+  <div class="sbar"><i class="y" style="width:${w(y,att)}%"></i><i class="n" style="width:${w(n,att)}%"></i><i class="th" style="left:${J.p.f*100}%"><em>門檻 ${+(J.p.f*100).toFixed(1)}%</em></i></div>
+  ${verd}
+  <div class="s-foot">通過門檻：${esc(J.p.label)}（${J.p.gt?'＞':'≧'}${+(J.p.f*100).toFixed(2)}%）・計票方式：${VB_TXT[vb]}・出席 ${x.attN} 戶／比例 ${fmtNum(x.attR)}</div>`; }
+function showElection(D,e){ const st={pending:'尚未開放投票',open:'● 投票進行中',closed:'投票已結束'};
+  const rows=e.list, cols=rows.length<=8?1:rows.length<=20?2:3, per=Math.max(1,Math.ceil(rows.length/cols));
+  const big=per>6, hCap=Math.max(1.2,((big?60:52)/per-1.1)/2.25), wCap=[2.6,1.75,1.15][cols-1];
+  const fs=`min(${wCap}vw, ${hCap.toFixed(2)}vh)`;
+  return `<div class="${big?'s-compact':''}"><div class="s-sub">委員選舉・${esc(e.groups.length?e.groups.join('、'):'全體住戶')}・每戶 ${e.maxVotes} 票・取前 ${e.top} 名</div><div class="s-title">${esc(e.name)}</div>
+  <div class="s-meta"><span class="${e.status==='open'?'s-live':''}">${st[e.status]}</span>　已投票 ${e.nv} / ${e.elig} 戶${e.tie?'　<span class="s-warn">⚠ 第 '+e.top+' 名有同票</span>':''}</div>
+  ${rows.length?`<ol class="rank" style="grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${per},auto);font-size:${fs}">${rows.map(y=>`<li class="${y.res}"><span class="rk">${y.rank}</span><span class="rn">${esc(y.seq)}　${esc(y.name)}${y.group?`<small>${esc(y.group)}</small>`:''}</span><span class="rv">${e.sort==='ratio'?fmtNum(y.r):y.v+' 票'}</span><span class="rt2">${y.res==='tie'?'同票':e.status==='closed'?'當選':''}</span></li>`).join('')}</ol>`
+    :'<div class="verd wait">尚無得票</div>'}</div>`; }
+/* ---------------- 投票明細（管理者手機查每戶狀況） ---------------- */
+function detailItems(){ return [...(A.data.topics||[]).map(t=>['t:'+t.id,`第${t.id}案 ${t.title}`,t.status]),...(A.data.elections||[]).map(e=>['e:'+e.id,e.name,e.status])]; }
+function detailRows(){ const {residents:R,checkins:C}=A.data, k=A.dsel, isT=k.startsWith('t:'), id=k.slice(2);
+  const nm=sq=>{ const r=R.find(x=>x.seq===sq); return r?`${sq} ${r.name}`:sq; };
+  if(isT){ const V=(A.data.votes||{})[id]||{};
+    return R.map(r=>{ const v=V[r.seq], c=C[r.seq]; const st=!c?'absent':v?'voted':'not';
+      return {r,st,tag:!c?'<span class="tag">未出席</span>':v?(v.v==='同意'?'<span class="tag ok">同意</span>':'<span class="tag bad">不同意</span>'):'<span class="tag px">未投</span>',
+        note:v&&v.by&&v.by!==r.seq?`由 ${nm(v.by)} 投（委託出席）`:(c&&c.via&&!v?`委託 ${nm(c.via)} 出席`:'')}; }); }
+  const e=(A.data.elections||[]).find(x=>x.id===id); if(!e) return []; const V=(A.data.evotes||{})[id]||{};
+  return R.filter(r=>inGrp(r,e)).map(r=>{ const v=V[r.seq], c=C[r.seq]; const st=!c?'absent':v?'voted':'not';
+    return {r,st,tag:!c?'<span class="tag">未出席</span>':v?'<span class="tag ok">已投</span>':'<span class="tag px">未投</span>',
+      note:(v?'圈選：'+v.picks.map(nm).join('、'):'')+(v&&v.by&&v.by!==r.seq?`（由 ${nm(v.by)} 投）`:(c&&c.via&&!v?`委託 ${nm(c.via)} 出席`:''))}; }); }
+function detailSum(){ const rows=detailRows(), n=k=>rows.filter(x=>x.st===k).length, isT=A.dsel.startsWith('t:');
+  const V=isT?((A.data.votes||{})[A.dsel.slice(2)]||{}):{}, ag=Object.values(V).filter(v=>v.v==='同意').length, dis=Object.values(V).length-ag;
+  const f=(k,l,c)=>`<button class="${A.df===k?'on':''}" onclick="A.df='${k}';drawDetail()">${l} <b>${c}</b></button>`;
+  return `${isT?`<div class="hint" style="margin:0 0 8px">同意 <b style="color:var(--ok)">${ag}</b> 戶・不同意 <b style="color:var(--bad)">${dis}</b> 戶</div>`:''}
+    <div class="chips">${f('all','全部',rows.length)}${f('voted','已投',n('voted'))}${f('not','已出席未投',n('not'))}${f('absent','未出席',n('absent'))}</div>`; }
+function detailList(){ const q=A.dq.trim().toLowerCase();
+  const rows=detailRows().filter(x=>(A.df==='all'||x.st===A.df)&&(!q||x.r.seq.toLowerCase().includes(q)||x.r.name.toLowerCase().includes(q)));
+  if(!rows.length) return '<div class="hint" style="padding:12px 0">沒有符合的住戶</div>';
+  return rows.slice(0,400).map(x=>`<div class="drow"><div class="dn"><b>${esc(x.r.seq)}　${esc(x.r.name)}</b><small>${esc(x.r.group?x.r.group+'・':'')}比例 ${esc(x.r.ratio)}</small>${x.note?`<div class="dnote">${esc(x.note)}</div>`:''}</div>${x.tag}</div>`).join(''); }
+function drawDetail(){ const s1=$('#dsum'), l=$('#dl'); if(s1) s1.innerHTML=detailSum(); if(l) l.innerHTML=detailList(); }
+function voteCtlHTML(){ const T=A.data.topics||[], E=A.data.elections||[]; if(!T.length&&!E.length) return '';
+  const st={pending:'<span class="tag">未開放</span>',open:'<span class="tag ok">● 投票中</span>',closed:'<span class="tag" style="background:#1d2321;color:#fff">已結束</span>'};
+  const b=(kind,id,s,name)=>s==='open'?`<button class="btn bad sm" onclick="${kind==='t'?`setTopicSt('${id}','closed')`:`setEl('${id}',{status:'closed'},'確定結束「${esc(name)}」嗎？\\n結束後住戶就不能再投。')`}">結束</button>`
+    :`<button class="btn ${s==='pending'?'pri':''} sm" onclick="${kind==='t'?`setTopicSt('${id}','open')`:`setEl('${id}',{status:'open'})`}">${s==='pending'?'開放':'重開'}</button>`;
+  const row=(kind,id,label,s,extra)=>`<div class="vc"><div class="vcn">${label}<div style="margin-top:3px">${st[s]} ${extra||''}</div></div><div style="display:flex;gap:6px;flex:none"><button class="btn sm" title="投影這一項" onclick="setShow('${kind}:${id}')">投影</button>${b(kind,id,s,label)}</div></div>`;
+  return `<div class="card" style="margin-top:14px"><h2>投票開關</h2>
+    ${T.length?`<div class="hint" style="margin:0 0 4px">議題投票</div>${T.map(t=>{ const x=tally(t.id); return row('t',esc(t.id),`第 ${esc(t.id)} 案　${esc(t.title)}`,t.status,t.status!=='pending'?`<span class="hint" style="margin-left:4px">已投 ${x.y+x.n} 票</span>`:''); }).join('')}`:''}
+    ${E.length?`<div class="hint" style="margin:12px 0 4px">委員選舉</div>${E.map(e=>{ const n=Object.keys((A.data.evotes||{})[e.id]||{}).length; return row('e',esc(e.id),esc(e.name),e.status,e.status!=='pending'?`<span class="hint" style="margin-left:4px">已投 ${n} 戶</span>`:''); }).join('')}`:''}
+  </div>`; }
+function drawLQ(){ const box=$('#lql'); if(!box) return; const q=A.lq.trim().toLowerCase();
+  if(!q){ box.style.display='none'; return; } box.style.display='';
+  const {residents,checkins}=A.data; const hits=residents.filter(r=>r.seq.toLowerCase().includes(q)||r.name.toLowerCase().includes(q)).slice(0,8);
+  box.innerHTML=hits.length?hits.map(r=>checkins[r.seq]?`<button disabled><span>${esc(r.seq)}　${esc(r.name)}</span><span class="tag ok">已報到</span></button>`
+    :r.delegate?`<button disabled><span>${esc(r.seq)}　${esc(r.name)}</span><span class="tag px">已委託 ${esc(r.delegate)}</span></button>`
+    :`<button onclick="showOneQR('${esc(r.seq)}')"><span>${esc(r.seq)}　${esc(r.name)}</span><span class="tag" style="background:var(--pri);color:#fff">產生 QR</span></button>`).join('')
+    :'<div style="padding:14px;color:#a0a8a5;font-size:15px">找不到符合的住戶</div>'; }
+async function setOpen(on){
+  if(!on && !confirm('確定要關閉報到嗎？\n關閉後住戶就無法再報到。')) return;
+  if(on && !A.data.residents.length) return alert('請先到「住戶名冊」匯入名冊');
+  try{ await call('setOpen',{pwd:A.pwd,open:on}); await loadAdmin(); toast(on?'已開放報到':'已關閉報到'); }catch(e){ toast(e.message); } }
+async function fetchAdmin(light){ // light：不重抓簽名圖，沿用手上已有的，減少流量
+  const d=await call('admin',{pwd:A.pwd,nosig:!!light});
+  if(light && A.data) for(const [k,v] of Object.entries(d.checkins)){ const o=A.data.checkins[k]; if(o&&o.sig&&o.time===v.time) v.sig=o.sig; }
+  A.data=d; A.upd=new Date(); }
+const needSig=()=>Object.values(A.data.checkins).some(c=>!c.sig);
+async function goTab(k){ A.tab=k; if((k==='status'||k==='sheet') && needSig()){ try{ await fetchAdmin(false); }catch(e){ toast(e.message); } } renderAdmin(); }
+async function autoRefresh(){
+  if(!A.data || !$('#pv').hidden || document.querySelector('div[style*="position:fixed"]')) return;
+  if(!['live','status','vote','elect','detail'].includes(A.tab)) return;
+  const typing = document.activeElement && document.activeElement.tagName==='INPUT';
+  try{ await fetchAdmin(true); if(A.tab==='status' && needSig()) await fetchAdmin(false); }catch(e){ return; }
+  if(A.tab==='live' && $('#live')){ $('#live').innerHTML=liveHTML(); $('#vctl').innerHTML=voteCtlHTML(); drawLQ(); }
+  else if(A.tab==='detail' && $('#dl')) drawDetail();
+  else if(!typing) renderAdmin();
+}
+function tally(tid,D){ D=D||A.data; const {residents,votes}=D, V=(votes||{})[tid]||{}, st=stats(D);
+  const o={y:0,yr:0,n:0,nr:0,attN:st.att,attR:st.sumAtt,total:st.total,denom:st.denom};
+  residents.forEach(r=>{ const v=V[r.seq]; if(!v) return; if(v.v==='同意'){o.y++;o.yr+=num(r.ratio);} else {o.n++;o.nr+=num(r.ratio);} });
+  o.uN=Math.max(0,o.attN-o.y-o.n); o.uR=Math.max(0,o.attR-o.yr-o.nr); return o; }
+function passRow(t){ const p=parsePass(t.pass)||parsePass(PASS_DEF), id=esc(t.id), vb=voteBy(A.data.config);
+  const opts=[...PASS_PRESETS]; if(!opts.includes(p.label)) opts.push(p.label);
+  return `<div class="passrow"><span>通過門檻：同意須達出席${vb==='ratio'?'區分所有權比例':'戶數'}的</span>
+    <select onchange="setPass('${id}',this)">${opts.map(x=>`<option ${x===p.label?'selected':''}>${esc(x)}</option>`).join('')}<option value="__c">自訂…</option></select></div>`; }
+function askPass(){ const v=prompt('請輸入通過門檻（同意占出席的百分比）\n例：60 → 60%以上；也可輸入「三分之二以上」「超過55%」'); if(v===null) return '';
+  const p=parsePass(/^\d+(\.\d+)?$/.test(v.trim())?v.trim()+'%以上':v); if(!p){ alert('看不懂這個門檻，請輸入 1～100 的數字，例如 60'); return ''; } return p.label; }
+async function setPass(id, sel){ let v=sel.value; if(v==='__c'){ v=askPass(); if(!v){ renderAdmin(); return; } }
+  try{ await call('setPass',{pwd:A.pwd,id,pass:v}); await fetchAdmin(true); renderAdmin(); toast(`第 ${id} 案門檻：${v}`); }catch(e){ toast(e.message); } }
+function tallyHTML(T,t){ const w=(a,b)=>b?Math.min(100,a/b*100):0, vb=voteBy(A.data.config), R=vb==='ratio';
+  const y=R?T.yr:T.y, n=R?T.nr:T.n, u=R?T.uR:T.uN, att=R?T.attR:T.attN;
+  const sub=(v,c)=>R?`比例 ${fmtNum(v)}・${c} 票`:`${c} 票`;
+  const hc=k=>vb===k?' class="hl"':'';
+  const J=judge(T,t,vb), cmp=`同意 ${pct(y,att)}　門檻：${J.p.label}（${J.p.gt?'＞':'≧'}${+(J.p.f*100).toFixed(2)}%）`;
+  const verdict = t.status==='closed' ? `<div class="verdict ${J.ok?'ok':'bad'}"><b>${J.ok?'✔ 通過':'✘ 未通過'}</b><span>${cmp}</span></div>`
+    : `<div class="verdict pend ${J.ok?'ok':''}"><b>${J.ok?'目前已達門檻':'目前未達門檻'}</b><span>${cmp}${t.status==='open'?'　（投票中，結束後判定）':''}</span></div>`;
+  return `<div class="vres"><div class="vk y"><span>同意</span><b>${pct(y,att)}</b><small>${sub(T.yr,T.y)}</small></div><div class="vk n"><span>不同意</span><b>${pct(n,att)}</b><small>${sub(T.nr,T.n)}</small></div><div class="vk u"><span>未投票</span><b>${pct(u,att)}</b><small>${R?`比例 ${fmtNum(T.uR)}・${T.uN} 戶`:`${T.uN} 戶`}</small></div></div>
+  <div class="vbar"><i class="y" style="width:${w(y,att)}%"></i><i class="n" style="width:${w(n,att)}%"></i></div>
+  ${verdict}
+  <div class="hint" style="margin:8px 0 6px">計票方式：<b>${VB_TXT[vb]}</b>（以出席${R?'區分所有權比例 '+fmtNum(att):'戶數 '+att+' 戶'}為分母）・已投 ${T.y+T.n} 票（同意 ${T.y}、不同意 ${T.n}）</div>
+  <table class="tb vt"><thead><tr><th></th><th${hc('count')}>票數（戶）</th><th${hc('ratio')}>區分所有權比例</th></tr></thead><tbody>
+  <tr><td><b style="color:var(--ok)">同意</b></td><td${hc('count')}>${T.y} 票（${pct(T.y,T.attN)}）</td><td${hc('ratio')}>${fmtNum(T.yr)}（${pct(T.yr,T.attR)}）</td></tr>
+  <tr><td><b style="color:var(--bad)">不同意</b></td><td${hc('count')}>${T.n} 票（${pct(T.n,T.attN)}）</td><td${hc('ratio')}>${fmtNum(T.nr)}（${pct(T.nr,T.attR)}）</td></tr>
+  <tr><td>未投票</td><td${hc('count')}>${T.uN} 戶（${pct(T.uN,T.attN)}）</td><td${hc('ratio')}>${fmtNum(T.uR)}（${pct(T.uR,T.attR)}）</td></tr>
+  <tr><td>出席合計</td><td${hc('count')}>${T.attN} 戶</td><td${hc('ratio')}>${fmtNum(T.attR)}</td></tr></tbody></table>
+  <p class="hint">同意占全體：${R?`比例 ${pct(T.yr,T.denom)}（${fmtNum(T.yr)} / ${fmtNum(T.denom)}）`:`戶數 ${pct(T.y,T.total)}（${T.y} / ${T.total} 戶）`}</p>`; }
+async function syncAudit(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>　更新中（約 10～30 秒）…';
+  try{ const r=await call('buildAudit',{pwd:A.pwd}); toast(`已更新驗票總表（${r.rows} 戶）`); }catch(e){ alert('更新失敗：'+e.message); }
+  btn.disabled=false; btn.textContent='更新試算表驗票總表'; }
+async function setVoteBy(k){ try{ await call('setVoteBy',{pwd:A.pwd,voteBy:k}); await fetchAdmin(true); renderAdmin(); toast('計票方式：'+VB_TXT[k]); }catch(e){ toast(e.message); } }
+const inGrp=(h,e)=>!e.groups.length||e.groups.includes(h.group||'');
+function etally(e,D){ const {residents:R,checkins,evotes}=D||A.data, V=(evotes||{})[e.id]||{}, by={}; R.forEach(r=>by[r.seq]=r);
+  const m={}; R.filter(h=>inGrp(h,e)).forEach(c=>m[c.seq]={c,v:0,r:0});
+  let nv=0, nvr=0; Object.entries(V).forEach(([seq,x])=>{ nv++; const w=by[seq]?num(by[seq].ratio):0; nvr+=w; x.picks.forEach(p=>{ if(m[p]){ m[p].v++; m[p].r+=w; } }); });
+  const R2=e.sort==='ratio', key=x=>R2?Math.round(x.r*1e4)/1e4:x.v, k2=x=>R2?x.v:Math.round(x.r*1e4)/1e4;
+  const list=Object.values(m).filter(x=>x.v>0).sort((a,b)=>key(b)-key(a)||k2(b)-k2(a)||natCmp(a.c.seq,b.c.seq));
+  list.forEach((x,i)=>{ x.rank = i&&key(list[i-1])===key(x) ? list[i-1].rank : i+1; });
+  const tie = list.length>e.top && key(list[e.top-1])===key(list[e.top]), cutK = list.length>=e.top ? key(list[e.top-1]) : null;
+  // 結果標記：確定進入前 N 名 → win；與第 N 名同票、超出名額 → tie
+  list.forEach(x=>{ x.res = x.rank>e.top ? '' : (tie && key(x)===cutK) ? 'tie' : 'win'; });
+  return {list,nv,nvr,tie,key,elig:R.filter(h=>inGrp(h,e)&&checkins[h.seq]).length,gTotal:R.filter(h=>inGrp(h,e)).length,cand:Object.keys(m).length}; }
+function electionCard(e,groups,tagOf){ const T=etally(e), id=esc(e.id), has=T.nv>0, show=A.showAll&&A.showAll[e.id];
+  const btn=e.status==='open'?`<button class="btn bad" onclick="setEl('${id}',{status:'closed'},'確定結束「${esc(e.name)}」嗎？\\n結束後住戶就不能再投。')">結束投票</button>`
+    :e.status==='pending'?`<button class="btn pri" onclick="setEl('${id}',{status:'open'})">開放投票</button>`:`<button class="btn" onclick="setEl('${id}',{status:'open'})">重新開放</button>`;
+  const rows=(show?T.list:T.list.filter(x=>x.rank<=e.top||T.list.indexOf(x)<e.top));
+  const lab=x=>x.res==='win'?(e.status==='closed'?'<span class="tag ok">當選</span>':`<span class="tag ok">前 ${e.top} 名</span>`):x.res==='tie'?'<span class="tag px">同票待定</span>':'';
+  return `<div class="card" style="${e.status==='open'?'border:2px solid var(--ok)':''}">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div style="min-width:0">
+      <div style="font-size:17px;font-weight:700">${esc(e.name)}</div>
+      <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${tagOf[e.status]}<span class="tag">${e.groups.length?esc(e.groups.join('、')):'全體住戶'}</span><span class="tag">每戶 ${e.maxVotes} 票</span></div></div>${btn}</div>
+    <div class="passrow"><span>取前</span><input type="number" min="1" value="${e.top}" style="width:76px;padding:7px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:15px;font-weight:700" onchange="setEl('${id}',{top:this.value})"><span>名</span>
+      <span style="margin-left:8px">排序依</span><select onchange="setEl('${id}',{sort:this.value})"><option value="count" ${e.sort!=='ratio'?'selected':''}>得票數</option><option value="ratio" ${e.sort==='ratio'?'selected':''}>得票區分所有權比例</option></select></div>
+    <div class="hint" style="margin-top:10px">候選人 ${T.cand} 位・已報到可投 ${T.elig} 戶・<b>已投票 ${T.nv} 戶</b>（${pct(T.nv,T.elig)}，含委託出席戶）</div>
+    ${T.tie?`<div class="warnbox">⚠ 第 ${e.top} 名有同票：${T.list.filter(x=>x.res==='tie').length} 位同票競爭 ${e.top-T.list.filter(x=>x.res==='win').length} 個名額，請依規約處理（例如抽籤）。</div>`:''}
+    ${T.list.length?`<div class="scroll" style="margin-top:10px;max-height:none"><table class="tb rk"><thead><tr><th>名次</th><th>候選人</th><th>得票</th><th>得票比例</th><th>結果</th></tr></thead><tbody>
+      ${rows.map(x=>`<tr${x.res?' class="win"':''}><td>${x.rank}</td><td class="nm">${esc(x.c.seq)} ${esc(x.c.name)}${x.c.group?`<small>${esc(x.c.group)}</small>`:''}</td><td><b>${x.v}</b> 票</td><td>${fmtNum(x.r)}</td><td>${lab(x)}</td></tr>`).join('')}
+      </tbody></table></div>
+      ${T.list.length>rows.length||show?`<button class="link" onclick="A.showAll=A.showAll||{};A.showAll['${id}']=!${!!show};renderAdmin()">${show?'只看前 '+e.top+' 名':`顯示其餘 ${T.list.length-rows.length} 位得票者`}</button>`:''}`
+      :`<p class="hint">${e.status==='pending'?'尚未開放投票。':'尚無人投票。'}</p>`}
+    <details style="margin-top:10px"><summary class="hint" style="cursor:pointer">修改設定</summary>
+      <label class="f">選舉名稱</label><input class="inp" id="en_${id}" value="${esc(e.name)}">
+      ${has?'<p class="hint">已有人投票，範圍與每戶票數不能再修改。</p>':`
+      ${groups.length?`<label class="f">範圍（棟別）：不勾＝全體住戶</label><div class="gchk">${groups.map(g=>`<label><input type="checkbox" class="eg_${id}" value="${esc(g)}" ${e.groups.includes(g)?'checked':''}> ${esc(g)}</label>`).join('')}</div>`:''}
+      <label class="f">每戶可投幾票</label><input class="inp" id="ev_${id}" type="number" min="1" value="${e.maxVotes}">`}
+      <div class="grid2" style="margin-top:12px"><button class="btn pri" onclick="saveEl('${id}',${has})">儲存</button>${has?'':`<button class="btn bad" onclick="delEl('${id}')">刪除這場選舉</button>`}</div>
+    </details></div>`; }
+async function setEl(id,fields,ask){ if(ask&&!confirm(ask)){ renderAdmin(); return; }
+  try{ await call('setElection',{pwd:A.pwd,id,fields}); await fetchAdmin(true); renderAdmin(); toast('已更新'); }catch(e){ alert(e.message); renderAdmin(); } }
+function saveEl(id,has){ const f={name:$('#en_'+id).value.trim()};
+  if(!has){ f.groups=[...document.querySelectorAll('.eg_'+id+':checked')].map(x=>x.value); f.maxVotes=$('#ev_'+id).value; }
+  setEl(id,f); }
+async function delEl(id){ if(!confirm('確定刪除這場選舉嗎？')) return; try{ await call('delElection',{pwd:A.pwd,id}); await fetchAdmin(true); renderAdmin(); toast('已刪除'); }catch(e){ alert(e.message); } }
+async function addElectionUI(){ const name=$('#ne_n').value.trim(), groups=[...document.querySelectorAll('.ne_g:checked')].map(x=>x.value);
+  if(!name) return toast('請輸入選舉名稱');
+  try{ await call('addElection',{pwd:A.pwd,name,groups,maxVotes:$('#ne_v').value,top:$('#ne_t').value}); await fetchAdmin(true); renderAdmin(); toast('已新增選舉'); }catch(e){ alert(e.message); } }
+async function setTopicSt(id,status){
+  const t=(A.data.topics||[]).find(x=>x.id===id);
+  if(status==='closed' && !confirm(`確定結束「第 ${id} 案」的投票嗎？\n結束後住戶就不能再投。`)) return;
+  try{ await call('setTopic',{pwd:A.pwd,id,status}); await fetchAdmin(true); renderAdmin(); toast(status==='open'?'已開放投票':'已結束投票'); }catch(e){ toast(e.message); } }
+async function addTopicUI(){ const title=$('#nt_t').value.trim(), desc=$('#nt_d').value.trim(); if(!title) return toast('請輸入議題名稱');
+  let pass=$('#nt_p').value; if(pass==='__c'){ pass=askPass(); if(!pass) return; }
+  try{ const r=await call('addTopic',{pwd:A.pwd,title,desc,pass}); await fetchAdmin(true); renderAdmin(); toast(`已新增第 ${r.id} 案`); }catch(e){ toast(e.message); } }
+function groupHTML(d, full){ const {residents,checkins}=A.data, st=stats(), ms=residents.filter(x=>x.delegate===d.seq);
+  const r=ms.reduce((a,m)=>a+num(m.ratio),0), warn=ms.length>st.total/5 || r>=st.denom/5;
+  return `<div class="grp">${full?`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>受託戶：${esc(d.seq)}　${esc(d.name)}</b>${checkins[d.seq]?'<span class="tag ok">已報到</span>':'<span class="tag">未報到</span>'}</div>`:'<div style="font-size:14px;color:var(--mute)">已歸入：</div>'}
+    <div style="margin:8px 0 4px">${ms.map(m=>`<span class="chip">${esc(m.seq)} ${esc(m.name)}<button title="移除" onclick="setDel('${esc(m.seq)}','')">×</button></span>`).join('')}</div>
+    <div class="hint" style="margin:4px 0 0">委託出席 ${ms.length} 戶・比例 ${fmtNum(r)}（${pct(r,st.denom)}）・連同本戶投票時共 ${ms.length+1} 票</div>
+    ${warn?'<div class="warnbox">⚠ 受託已達全體五分之一（公寓大廈管理條例第 27 條），超過部分依法不予計算，請確認委託書。</div>':''}
+    ${full?`<button class="link" onclick="A.pd='${esc(d.seq)}';A.pq2='';goTab('proxy');scrollTo(0,0)">繼續加入委託戶</button>`:''}</div>`; }
+function drawPQ(){ const box=$('#pql'); if(!box) return; const q=A.pq.trim().toLowerCase(); if(!q){ box.style.display='none'; return; } box.style.display='';
+  const hits=A.data.residents.filter(r=>r.seq.toLowerCase().includes(q)||r.name.toLowerCase().includes(q)).slice(0,8);
+  box.innerHTML=hits.length?hits.map(r=>r.delegate?`<button disabled><span>${esc(r.seq)}　${esc(r.name)}</span><span class="tag px">已委託 ${esc(r.delegate)}</span></button>`
+    :`<button onclick="A.pd='${esc(r.seq)}';A.pq2='';renderAdmin()"><span>${esc(r.seq)}　${esc(r.name)}</span><span class="tag">選為受託戶</span></button>`).join(''):'<div style="padding:14px;color:#a0a8a5">找不到符合的住戶</div>'; }
+function drawPQ2(){ const box=$('#pql2'); if(!box) return; const q=A.pq2.trim().toLowerCase(); if(!q){ box.style.display='none'; return; } box.style.display='';
+  const {residents,checkins}=A.data, isDel=s=>residents.some(x=>x.delegate===s);
+  const hits=residents.filter(r=>r.seq!==A.pd&&(r.seq.toLowerCase().includes(q)||r.name.toLowerCase().includes(q))).slice(0,8);
+  box.innerHTML=hits.length?hits.map(r=>{ const lab=`<span>${esc(r.seq)}　${esc(r.name)}</span>`;
+    if(r.delegate===A.pd) return `<button disabled>${lab}<span class="tag ok">已加入</span></button>`;
+    if(isDel(r.seq)) return `<button disabled>${lab}<span class="tag">本身是受託戶</span></button>`;
+    if(checkins[r.seq]&&!checkins[r.seq].via) return `<button disabled>${lab}<span class="tag">已自行報到</span></button>`;
+    return `<button onclick="setDel('${esc(r.seq)}','${esc(A.pd)}')">${lab}<span class="tag" style="background:var(--pri);color:#fff">${r.delegate?'改歸此戶（原 '+esc(r.delegate)+'）':'加入'}</span></button>`; }).join('')
+    :'<div style="padding:14px;color:#a0a8a5">找不到符合的住戶</div>'; }
+async function setDel(seq, del){
+  const c=A.data.checkins[seq];
+  if(!del && !confirm(`確定把 ${seq} 移出歸戶嗎？${c&&c.via?'\n透過委託完成的報到與投票會一併撤銷。':''}`)) return;
+  try{ await call('setDelegate',{pwd:A.pwd,seq,delegate:del}); await fetchAdmin(true); A.pq2=''; renderAdmin(); toast(del?`已將 ${seq} 歸入 ${del}`:`已移出 ${seq}`); const i=$('#pq2'); if(i&&del) i.focus(); }
+  catch(e){ alert(e.message); } }
+function renderAdminKeep(){ const el=document.activeElement, pos=el&&el.selectionStart; renderAdmin(); const i=$('.filters .inp'); if(i){ i.focus(); try{i.setSelectionRange(pos,pos);}catch(e){} } }
+async function refresh(){ if(await loadAdmin()) toast('已更新'); }
+async function revoke(seq){ const r=A.data.residents.find(x=>x.seq===seq), n=Object.values(A.data.checkins).filter(c=>c.via===seq).length;
+  if(!confirm(`確定要撤銷 ${seq} ${r?r.name:''} 的報到與簽名嗎？${n?`\n委託他出席的 ${n} 戶也會一併撤銷。`:''}\n已投的票也會一併刪除。`)) return;
+  try{ await call('revoke',{pwd:A.pwd,seq}); await loadAdmin(); toast('已撤銷'); }catch(e){ toast(e.message); } }
+async function clearAll(){ if(!confirm('確定要清除「所有」報到紀錄、簽名與投票結果嗎？此動作無法復原。')) return; if(prompt('請輸入「清除」兩個字確認')!=='清除') return;
+  try{ await call('clear',{pwd:A.pwd}); await loadAdmin(); toast('已清除'); }catch(e){ toast(e.message); } }
+async function saveCfg(){
+  const spw=($('#c_spw')||{}).value||''; const config={...(spw?{showPwd:spw.trim()}:{}), voteBy:($('[data-vb].on')||{}).dataset?.vb||'ratio', mode:($('[data-m].on')||{}).dataset?.m||'personal', name:$('#c_name').value.trim(), meeting:$('#c_mtg').value.trim()||DEF_MEETING, title:$('#c_title').value.trim(), date:$('#c_date').value, denom:$('#c_den').value.trim(), newPwd:$('#c_pwd').value};
+  if(config.denom && !(num(config.denom)>0)) return toast('比例分母需為數字');
+  try{ await call('saveConfig',{pwd:A.pwd,config}); if(config.newPwd){ A.pwd=config.newPwd; sessionStorage.setItem('agm_pwd',A.pwd);} await loadAdmin(); toast('設定已儲存'); }catch(e){ toast(e.message); }
+}
+function needLib(name){ if(!window[name]){ alert('元件載入中或網路不通，請稍候再試'); return false; } return true; }
+function parseRoster(rows,h){ let cS=0,cN=1,cR=2,cD=-1,cG=-1;
+  if(h>=0){ const hr=rows[h].map(String); cS=hr.findIndex(c=>/序號/.test(c)); cN=hr.findIndex(c=>/姓名/.test(c)); cR=hr.findIndex(c=>/比例/.test(c)); cD=hr.findIndex(c=>/受託/.test(c)); cG=hr.findIndex(c=>/棟|分區|類別|組別/.test(c)); if(cR<0) cR=cN+1; }
+  const list=[], seen=new Set(); let denom='';
+  rows.slice(h+1).forEach(r=>{ const seq=String(r[cS]??'').trim(), name=String(r[cN]??'').trim(); if(!seq||!name) return;
+    if(seen.has(seq)) throw new Error('序號重複：'+seq); seen.add(seq);
+    let [ratio,den]=String(r[cR]??'').replace(/\s/g,'').split('/'); if(den&&!denom) denom=den;
+    list.push({seq,name,ratio:ratio||'0',delegate:cD>=0?String(r[cD]??'').trim():'',group:cG>=0?String(r[cG]??'').trim():''}); });
+  return {list,denom,hasDelegate:cD>=0}; }
+function parseTopics(rows,h){ const hr=rows[h].map(String);
+  const cI=hr.findIndex(c=>/編號|案號|案次/.test(c)), cT=hr.findIndex(c=>/議題|案由/.test(c)&&!/編號/.test(c)), cD=hr.findIndex(c=>/說明/.test(c)), cP=hr.findIndex(c=>/門檻/.test(c));
+  const list=[], bad=[]; rows.slice(h+1).forEach(r=>{ const title=String(r[cT]??'').trim(); if(!title) return;
+    const raw=cP>=0?String(r[cP]??'').trim():''; let pass='';
+    if(raw){ const p=parsePass(/^\d+(\.\d+)?$/.test(raw)?raw+'%以上':raw); if(!p) bad.push(`「${title}」的門檻「${raw}」`); else pass=p.label; }
+    list.push({id:cI>=0?String(r[cI]??'').trim():'',title,desc:cD>=0?String(r[cD]??'').trim():'',pass}); });
+  if(bad.length) throw new Error('看不懂的通過門檻：\n'+bad.slice(0,5).join('\n')+'\n\n可寫：過半數、三分之二以上、四分之三以上、60%以上、超過55%');
+  list.forEach((t,i)=>{ if(!t.id) t.id=String(i+1); }); return list; }
+async function importFile(f){
+  if(!f||!needLib('XLSX')) return;
+  try{
+    const wb=XLSX.read(await f.arrayBuffer()); let roster=null, topics=null;
+    wb.SheetNames.forEach((name,i)=>{ const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:false,defval:''});
+      const hr=rows.findIndex(r=>r.some(c=>/序號/.test(c))&&r.some(c=>/姓名/.test(c)));
+      const ht=rows.findIndex(r=>r.some(c=>/議題|案由/.test(c)));
+      if(!topics && ht>=0 && hr<0) topics=parseTopics(rows,ht);
+      else if(!roster && (hr>=0 || (i===0 && rows.length))) roster=parseRoster(rows,hr); });
+    if(roster && !roster.list.length) roster=null;
+    if(!roster && !topics) throw new Error('沒有讀到資料。請確認工作表欄位：住戶名冊（序號、姓名、區分所有權比例）、議題（編號、議題、說明）');
+    const sumNew=roster?roster.list.reduce((s,r)=>s+num(r.ratio),0):0;
+    const msg=[]; if(roster) msg.push(`住戶名冊：${roster.list.length} 戶（第一筆 ${roster.list[0].seq} ${roster.list[0].name}）\n比例分母：${roster.denom||fmtNum(sumNew)+'（自動加總）'}${roster.hasDelegate?`\n受託戶設定：${roster.list.filter(r=>r.delegate).length} 戶`:''}${(()=>{ const g={}; roster.list.forEach(r=>{ if(r.group) g[r.group]=(g[r.group]||0)+1; }); const k=Object.keys(g); return k.length?'\n棟別：'+k.map(x=>x+' '+g[x]+' 戶').join('、'):''; })()}`);
+    if(topics) msg.push(`議題：${topics.length} 案（${topics.slice(0,3).map(t=>t.id+'. '+t.title).join('、')}${topics.length>3?'…':''}）`);
+    if(!confirm(msg.join('\n\n')+'\n\n確定匯入（整份取代現有資料）？')) return;
+    if(roster){ const nCk=Object.keys(A.data.checkins).length;
+      const clearCheckins = nCk>0 && confirm(`目前還有 ${nCk} 筆報到紀錄與簽名。\n\n換社區或新的會議 → 按「確定」一併清除（投票結果也會清除）\n同一場會議只是修正名冊 → 按「取消」保留`);
+      await call('import',{pwd:A.pwd,residents:roster.list,denom:roster.denom,hasDelegate:roster.hasDelegate,clearCheckins}); }
+    if(topics){ const nv=Object.values(A.data.votes||{}).reduce((a,V)=>a+Object.keys(V).length,0);
+      if(nv && !confirm(`目前已有 ${nv} 筆投票紀錄，匯入新議題會清除所有投票結果。確定嗎？`)) topics=null;
+      else await call('importTopics',{pwd:A.pwd,topics}); }
+    await loadAdmin(); toast([roster&&`已匯入 ${roster.list.length} 戶`,topics&&`${topics.length} 案議題`].filter(Boolean).join('、'));
+  }catch(e){ alert('匯入失敗：'+e.message); }
+}
+function sampleXlsx(){ if(!needLib('XLSX')) return; const {residents:R,config}=A.data, T=A.data.topics||[];
+  const r=[['序號','姓名','區分所有權比例','受託戶序號（選填）','棟別（選填）'],...(R.length?R.map(x=>[x.seq,x.name,config.denom?`${x.ratio}/${config.denom}`:x.ratio,x.delegate||'',x.group||'']):[['S1','王小明','61.07','','A棟'],['S2','陳大華','31.1','S1','A棟'],['B1','林小美','45.2','','店面']])];
+  const t=[['編號','議題','說明（選填）','通過門檻（選填，預設過半數）'],...(T.length?T.map(x=>[x.id,x.title,x.desc||'',x.pass||PASS_DEF]):[['1','○○年度財務報告承認案','請參閱會議手冊','過半數'],['2','規約修正案','第5條修正','四分之三以上']])];
+  const w1=XLSX.utils.aoa_to_sheet(r); w1['!cols']=[{wch:10},{wch:22},{wch:18},{wch:18},{wch:12}];
+  const w2=XLSX.utils.aoa_to_sheet(t); w2['!cols']=[{wch:8},{wch:36},{wch:40},{wch:22}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,w1,'住戶名冊'); XLSX.utils.book_append_sheet(wb,w2,'議題');
+  XLSX.writeFile(wb, R.length||T.length?`${config.name||'社區'}名冊與議題.xlsx`:'名冊與議題範本.xlsx'); }
+async function exportXlsx(){ if(!needLib('XLSX')) return; const {residents,checkins,config}=A.data, st=stats(), T=A.data.topics||[], V=A.data.votes||{};
+  const aoa=[['序號','姓名','區分所有權比例','是否委託出席','委託關係','委託出席對象','報到時間']];
+  residents.forEach(r=>{ const c=checkins[r.seq]; aoa.push([r.seq,r.name,`${r.ratio}/${st.denomStr}`,c?c.mode:'未出席',c?c.rel:'',c?c.via||'':'',c?hhmm(c.time):'']); });
+  aoa.push([],['應出席戶數',st.total],['出席數',st.att,'本人',st.self,'委託',st.proxy],['出席率（人數）',pct(st.att,st.total)],['出席比例',`${fmtNum(st.sumAtt)}/${st.denomStr}`],['出席率（比例）',pct(st.sumAtt,st.denom)]);
+  const vb=voteBy(config); const vs=[['計票方式：'+VB_TXT[vb]],['編號','議題','狀態','通過門檻','結果','同意率（依計票方式）','不同意率（依計票方式）','同意票數','同意比例','不同意票數','不同意比例','未投票戶數','未投票比例','出席戶數','出席比例','同意率（戶數／出席）','同意率（比例／出席）']];
+  const stTxt={pending:'未開放',open:'投票中',closed:'已結束'};
+  T.forEach(t=>{ const x=tally(t.id); const J=judge(x,t,vb); vs.push([t.id,t.title,stTxt[t.status],J.p.label,t.status==='closed'?(J.ok?'通過':'未通過'):(J.ok?'目前達門檻':'目前未達門檻'),vb==='ratio'?pct(x.yr,x.attR):pct(x.y,x.attN),vb==='ratio'?pct(x.nr,x.attR):pct(x.n,x.attN),x.y,fmtNum(x.yr),x.n,fmtNum(x.nr),x.uN,fmtNum(x.uR),x.attN,fmtNum(x.attR),pct(x.y,x.attN),pct(x.yr,x.attR)]); });
+  const vd=[['議題編號','議題','序號','姓名','區分所有權比例','意見','投票人（受託戶）','投票時間']];
+  T.forEach(t=>Object.entries(V[t.id]||{}).forEach(([seq,v])=>{ const r=residents.find(x=>x.seq===seq)||{}; vd.push([t.id,t.title,seq,r.name||'',r.ratio||'',v.v,v.by===seq?'':v.by,hhmm(v.time)]); }));
+  const wb=XLSX.utils.book_new(), add=(a,n,c)=>{ const ws=XLSX.utils.aoa_to_sheet(a); ws['!cols']=c.map(w=>({wch:w})); XLSX.utils.book_append_sheet(wb,ws,n); };
+  const E=A.data.elections||[], EV=A.data.evotes||{};
+  const er=[]; E.forEach(e=>{ const x=etally(e); er.push([`${e.name}（${e.groups.length?e.groups.join('、'):'全體住戶'}・每戶 ${e.maxVotes} 票・取前 ${e.top} 名・已投票 ${x.nv} 戶）`]);
+    er.push(['名次','序號','姓名','棟別','得票數','得票區分所有權比例','結果']);
+    x.list.forEach(y=>er.push([y.rank,y.c.seq,y.c.name,y.c.group||'',y.v,fmtNum(y.r),y.res==='win'?(e.status==='closed'?'當選':'前'+e.top+'名'):y.res==='tie'?'同票待定':'']));
+    if(x.tie) er.push(['⚠ 第'+e.top+'名同票，請依規約處理']); er.push([]); });
+  const ed=[['選舉','序號','姓名','圈選','投票人（受託戶）','投票時間']];
+  E.forEach(e=>Object.entries(EV[e.id]||{}).forEach(([seq,v])=>{ const r=residents.find(x=>x.seq===seq)||{}; ed.push([e.name,seq,r.name||'',v.picks.join('、'),v.by===seq?'':v.by,hhmm(v.time)]); }));
+  const nmS=sq=>{ const r=residents.find(x=>x.seq===sq); return r?sq+' '+r.name:sq; };
+  const ah=['序號','姓名','棟別','區分所有權比例','出席','委託關係','委託出席對象','報到時間',...T.map(t=>`第${t.id}案 ${t.title}`),...E.map(e=>e.name+'（圈選）')];
+  const ad=[ah,...residents.map(r=>{ const k=checkins[r.seq];
+    const row=[r.seq,r.name,r.group||'',r.ratio,k?(k.via?'委託出席':k.mode==='本人'?'本人出席':'委託出席'):(r.delegate?`未出席（已委託 ${r.delegate}）`:'未出席'),k?k.rel:'',k?(k.via?nmS(k.via):''):(r.delegate?nmS(r.delegate):''),k?hhmm(k.time):''];
+    T.forEach(t=>{ const v=(V[t.id]||{})[r.seq]; row.push(v?v.v+(v.by&&v.by!==r.seq?`（由 ${v.by} 投）`:''):(k?'未投':'')); });
+    E.forEach(e=>{ const v=(EV[e.id]||{})[r.seq]; row.push(!inGrp(r,e)?'（不在範圍）':v?v.picks.map(nmS).join('、')+(v.by&&v.by!==r.seq?`（由 ${v.by} 投）`:''):(k?'未投':'')); });
+    return row; })];
+  add(ad,'驗票總表',[10,20,8,12,22,16,18,12,...T.map(()=>16),...E.map(()=>40)]);
+  add(aoa,'報到結果',[14,22,18,14,22,10,16]);
+  if(E.length){ add(er,'委員選舉',[8,10,22,10,10,18,10]); add(ed,'選票明細',[20,10,20,40,14,16]); } if(T.length){ add(vs,'投票結果',[6,30,8,14,12,14,14,10,12,10,12,10,12,10,12,14,14]); add(vd,'投票明細',[8,30,10,20,14,8,14,16]); }
+  XLSX.writeFile(wb,`${config.name||'社區'}${mtg(config)}報到與投票結果.xlsx`); }
+function checkinURL(){ return location.origin==='null'||location.protocol==='file:' ? location.href.split('?')[0] : location.origin+location.pathname; }
+function qrData(url,cell){ const q=qrcode(0,'M'); q.addData(url); q.make(); return q.createDataURL(cell,cell*2); }
+function drawQR(){ const go=()=>{ if(!window.qrcode) return setTimeout(go,300); $('#qrimg')&&($('#qrimg').src=qrData(checkinURL(),8)); }; go(); }
+function tokenURL(t){ return checkinURL()+'?t='+encodeURIComponent(t); }
+function showOneQR(seq){ if(!needLib('qrcode')) return; const r=A.data.residents.find(x=>x.seq===seq); if(!r) return;
+  if(!r.token) return alert('這一戶還沒有代碼，請到「住戶名冊」重新匯入，或按「重新產生全部代碼」');
+  const m=document.createElement('div'); m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;display:grid;place-items:center;padding:16px';
+  m.innerHTML=`<div class="card" style="max-width:360px;width:100%;text-align:center;margin:0"><h2 style="justify-content:center">${esc(r.seq)}　${esc(r.name)}</h2>
+    <img src="${qrData(tokenURL(r.token),8)}" style="width:240px;height:240px;image-rendering:pixelated"><p class="hint">請住戶用自己的手機掃描，或直接在這支手機幫他報到</p>
+    <a class="btn pri big" style="margin-top:12px;text-decoration:none" href="${esc(tokenURL(r.token))}" target="_blank">在這支手機開啟報到頁</a>
+    <button class="btn big" style="margin-top:8px" onclick="this.closest('[style*=fixed]').remove()">關閉</button></div>`;
+  m.onclick=e=>{ if(e.target===m) m.remove(); }; document.body.appendChild(m); }
+async function regen(){ if(!confirm('確定要重新產生全部代碼嗎？\n舊的住戶報到卡會全部失效，必須重新列印發送。')) return;
+  try{ await call('regen',{pwd:A.pwd}); await loadAdmin(); toast('已重新產生，請重新列印報到卡'); }catch(e){ toast(e.message); } }
+function printCards(onlyTodo){ if(!needLib('qrcode')) return; const {config,residents,checkins}=A.data;
+  const list=residents.filter(r=>!onlyTodo||!checkins[r.seq]); if(!list.length) return toast('沒有需要列印的住戶');
+  if(list.some(r=>!r.token)) return alert('有住戶還沒有代碼，請先按「重新產生全部代碼」');
+  const card=r=>`<div class="qc"><div class="qc1">${esc(config.name||'')}</div><div class="qc2">${esc(mtg(config))}　報到卡</div>
+    <div class="qc3${(r.seq+r.name).length>9?' long':''}">${esc(r.seq)}　${esc(r.name)}</div><img src="${qrData(tokenURL(r.token),3)}"><div class="qc4">會議日期：${esc(rocDate(config.date))}</div>
+    <div class="qc5">請用手機相機掃描，完成報到與簽名<br>本卡僅限本戶使用，請妥善保管</div></div>`;
+  let html=''; for(let i=0;i<list.length;i+=12) html+=`<div class="page qp">${list.slice(i,i+12).map(card).join('')}</div>`;
+  openPV(html); }
+function copyURL(){ navigator.clipboard.writeText(checkinURL()).then(()=>toast('已複製網址'),()=>prompt('請手動複製',checkinURL())); }
+
+/* ---------------- 列印：簽到表 / QR 海報 ---------------- */
+function openPV(html){ $('#pages').innerHTML=html; $('#pv').hidden=false; fitPV(); document.body.style.overflow='hidden'; }
+function closePV(){ $('#pv').hidden=true; document.body.style.overflow=''; }
+function fitPV(){ const px=210*96/25.4+20; $('#pages').style.setProperty('--z', Math.min(1, innerWidth/px)); }
+addEventListener('resize',()=>{ if(!$('#pv').hidden) fitPV(); });
+
+function printPoster(){ if(!needLib('qrcode')) return; const c=A.data.config;
+  openPV(`<div class="page"><div class="poster"><h1>${esc(c.name||'')}</h1><h2>${esc(mtg(c))}　報到處</h2><img src="${qrData(checkinURL(),10)}"><p>請用手機相機掃描 QR Code，完成報到與簽名</p><p style="font-size:12pt;margin-top:3mm">會議日期：${esc(rocDate(c.date))}</p></div></div>`); }
+
+function box(on){ return `<span class="cb${on?' on':''}"></span>`; }
+
+/* ---------------- 報表 PDF（議題表決、委員選舉）：自動分頁＋頁碼 ---------------- */
+const RW=180, CAP=296.5-10-6-10;   // 內容寬 mm；每頁可用高度 mm（扣上下邊界與頁碼）
+const estH=(text,wmm,pt,minH)=>{ const cw=pt*0.3528, cpl=Math.max(1,Math.floor((wmm-2)/cw)); let len=0; for(const ch of String(text)) len+= /[\x00-\xff]/.test(ch)?0.55:1;
+  return Math.max(minH||0, Math.ceil(len/cpl)*pt*0.3528*1.4+2.4); };
+function packReport(blocks){
+  const pages=[]; let cur=[], used=0;
+  const np=()=>{ if(cur.length) pages.push(cur); cur=[]; used=0; };
+  const add=(h,html)=>{ if(used+h>CAP && cur.length) np(); cur.push(html); used+=h; };
+  blocks.forEach(b=>{
+    if(b.newPage) np();
+    if(!b.table){ add(b.h,b.html); return; }
+    const t=b.table, first=t.rows[0]?t.rows[0].h:0; let rows=[];
+    const flush=()=>{ if(rows.length) cur.push(`<table class="rt">${t.cols}<thead>${t.head}</thead><tbody>${rows.join('')}</tbody></table>`); rows=[]; };
+    if(t.caption){ if(used+t.caption.h+t.headH+first>CAP && cur.length) np(); add(t.caption.h,t.caption.html); }
+    else if(used+t.headH+first>CAP && cur.length) np();
+    used+=t.headH;
+    t.rows.forEach(r=>{ if(used+r.h>CAP && rows.length){ flush(); np(); if(t.cont){ cur.push(`<div class="rcont">${t.cont}（續）</div>`); used+=6; } used+=t.headH; } rows.push(r.html.replace('<tr',`<tr style="height:${r.h}mm"`)); used+=r.h; });
+    flush(); used+=b.gap??5;
+  });
+  np(); const N=pages.length;
+  return pages.map((p,i)=>`<div class="page rpt">${p.join('')}<div class="pn">第${i+1}頁，共${N}頁</div></div>`).join('');
+}
+const colg=ws=>`<colgroup>${ws.map(w=>`<col style="width:${w}%">`).join('')}</colgroup>`;
+function rptHead(sub){ const c=A.data.config; return {h:21,html:`<div class="ttl">${esc((c.name||'')+mtg(c))}　${sub}</div><div class="dt">會議日期：${esc(rocDate(c.date))}</div>`}; }
+function rptAttend(){ const st=stats(), vb=voteBy(A.data.config);
+  return {h:24,html:`<table class="rs"><tr><th>應出席</th><td>${st.total} 戶・區分所有權比例 ${esc(st.denomStr)}</td></tr>
+    <tr><th>出席</th><td>${st.att} 戶（${pct(st.att,st.total)}）・區分所有權比例 ${fmtNum(st.sumAtt)}（${pct(st.sumAtt,st.denom)}）・其中委託出席 ${st.proxy} 戶</td></tr>
+    <tr><th>計票方式</th><td>${VB_TXT[vb]}（百分比以出席為分母）</td></tr></table>`}; }
+const rptSign=()=>({h:34,html:`<div class="sgn"><span>主席：</span><span>記錄：</span><span>監票：</span></div><div class="note">列印時間：${esc(new Date().toLocaleString('zh-TW',{hour12:false}))}</div>`});
+
+function printTopics(){
+  const T=A.data.topics||[], V=A.data.votes||{}, R=A.data.residents, C=A.data.checkins, vb=voteBy(A.data.config), withD=$('#px_vd')&&$('#px_vd').checked;
+  const stTxt={pending:'未開放',open:'投票中',closed:'已結束'};
+  const blocks=[rptHead('議題表決結果'), rptAttend()];
+  const rows=T.map(t=>{ const x=tally(t.id), J=judge(x,t,vb), R2=vb==='ratio';
+    const cell=(c,r,base)=>`${c} 票<br>${fmtNum(r)}<br><b>${pct(R2?r:c,R2?x.attR:x.attN)}</b>`;
+    const res=t.status==='closed'?(J.ok?'<b class="ok">通過</b>':'<b class="bad">未通過</b>'):t.status==='open'?'投票中':'未表決';
+    const h=Math.max(17, estH(t.title,RW*0.30,10.5)+(t.desc?estH(t.desc,RW*0.30,8.5):0));
+    return {h,html:`<tr><td>${esc(t.id)}</td><td class="l">${esc(t.title)}${t.desc?`<div class="sm">${esc(t.desc)}</div>`:''}</td><td>${esc(J.p.label)}</td>
+      <td>${cell(x.y,x.yr)}</td><td>${cell(x.n,x.nr)}</td><td>${x.uN} 戶<br>${fmtNum(x.uR)}</td><td>${res}</td></tr>`}; });
+  blocks.push({table:{cols:colg([7,30,13,14,14,11,11]),head:'<tr><th>案次</th><th>議題</th><th>通過門檻</th><th>同意</th><th>不同意</th><th>未投票</th><th>結果</th></tr>',headH:9,rows,cont:'議題表決結果'}});
+  blocks.push({h:7,html:`<div class="note">同意／不同意欄：票數（戶）、區分所有權比例、百分比（${VB_TXT[vb]}）。</div>`,});
+  blocks.push(rptSign());
+  if(withD && T.length){
+    const tw=Math.max(5,Math.floor(44/T.length)), first=[11,22,9,14], last=100-first.reduce((a,b)=>a+b,0)-tw*T.length;
+    const ws=[...first, ...T.map(()=>tw)]; ws[1]+=last;
+    const dr=R.map(r=>{ const k=C[r.seq];
+      const att=k?(k.via?'委託':k.mode==='本人'?'本人':'委託'):'—';
+      return {h:6.2,html:`<tr><td>${esc(r.seq)}</td><td class="l nw">${esc(r.name)}</td><td>${esc(r.ratio)}</td><td>${att}</td>${T.map(t=>{ const v=(V[t.id]||{})[r.seq];
+        return `<td>${v?(v.v==='同意'?'同意':'<b>不同意</b>')+(v.by&&v.by!==r.seq?'*':''):(k?'未投':'—')}</td>`; }).join('')}</tr>`}; });
+    blocks.push({newPage:true,h:16,html:`<div class="ttl" style="font-size:13pt">附件：各戶投票明細</div><div class="note">「*」表示由受託戶投票（委託出席）；「—」表示未出席。</div>`});
+    blocks.push({table:{cols:colg(ws),head:`<tr><th>序號</th><th>姓名</th><th>比例</th><th>出席</th>${T.map(t=>`<th>第${esc(t.id)}案</th>`).join('')}</tr>`,headH:7,rows:dr,cont:'各戶投票明細'}});
+  }
+  openPV(packReport(blocks));
+}
+function printElections(){
+  const all=A.data.elections||[], sel=[...document.querySelectorAll('.px_e:checked')].map(x=>x.value);
+  const E=document.querySelectorAll('.px_e').length?all.filter(e=>sel.includes(e.id)):all;
+  if(!E.length) return toast('請至少勾選一場選舉');
+  const mode=(document.querySelector('[name=px_r]:checked')||{}).value||'top', withD=$('#px_ed')&&$('#px_ed').checked;
+  const stTxt={pending:'未開放',open:'投票中',closed:'已結束'}, EV=A.data.evotes||{}, R=A.data.residents, nm=sq=>{ const r=R.find(x=>x.seq===sq); return r?r.name:''; };
+  const blocks=[rptHead('委員選舉結果'), rptAttend()];
+  E.forEach(e=>{ const x=etally(e), list=mode==='all'?x.list:x.list.filter(y=>y.res);
+    const cap=`<div class="ecap"><b>${esc(e.name)}</b>　範圍：${esc(e.groups.length?e.groups.join('、'):'全體住戶')}・每戶 ${e.maxVotes} 票・取前 ${e.top} 名・排序依${e.sort==='ratio'?'得票比例':'得票數'}・狀態：${stTxt[e.status]}<br>
+      候選人 ${x.cand} 位・已報到可投 ${x.elig} 戶・已投票 ${x.nv} 戶（${pct(x.nv,x.elig)}，含委託出席戶）</div>`;
+    const rows=list.map(y=>({h:7,html:`<tr${y.res?' class="w"':''}><td>${y.rank}</td><td>${esc(y.c.seq)}</td><td class="l nw">${esc(y.c.name)}</td><td>${esc(y.c.group||'')}</td><td>${y.v}</td><td>${fmtNum(y.r)}</td><td>${y.res==='win'?(e.status==='closed'?'<b class="ok">當選</b>':`前 ${e.top} 名`):y.res==='tie'?'<b class="bad">同票待定</b>':''}</td></tr>`}));
+    if(!rows.length) rows.push({h:7,html:'<tr><td colspan="7">尚無得票紀錄</td></tr>'});
+    blocks.push({table:{caption:{h:15,html:cap},cols:colg([9,13,30,12,12,12,12]),head:'<tr><th>名次</th><th>序號</th><th>姓名</th><th>棟別</th><th>得票數</th><th>得票比例</th><th>結果</th></tr>',headH:8,rows,cont:e.name},gap:3});
+    if(x.tie) blocks.push({h:8,html:`<div class="note bad">⚠ 第 ${e.top} 名有同票（${x.list.filter(y=>y.res==='tie').length} 位競爭 ${e.top-x.list.filter(y=>y.res==='win').length} 個名額），請依規約處理。</div>`});
+    blocks.push({h:4,html:'<div style="height:4mm"></div>'});
+  });
+  blocks.push(rptSign());
+  if(withD) E.forEach((e,i)=>{ const V=EV[e.id]||{}, ent=Object.entries(V).sort((a,b)=>a[0].localeCompare(b[0],'zh-Hant',{numeric:true}));
+    const rows=ent.map(([sq,v])=>{ const txt=v.picks.join('、'); return {h:estH(txt,RW*0.5,9,6.2),html:`<tr><td>${esc(sq)}</td><td class="l nw">${esc(nm(sq))}</td><td class="l">${esc(txt)}</td><td>${v.by&&v.by!==sq?esc(v.by):''}</td></tr>`}; });
+    if(!rows.length) rows.push({h:7,html:'<tr><td colspan="4">尚無選票</td></tr>'});
+    blocks.push({newPage:i===0,h:i===0?10:0,html:i===0?'<div class="ttl" style="font-size:13pt">附件：選票明細</div>':''});
+    blocks.push({table:{caption:{h:9,html:`<div class="ecap"><b>${esc(e.name)}</b>　（圈選欄為候選人序號；「受託戶」欄有填者，表示該戶委託出席、由受託戶投票）</div>`},cols:colg([12,24,50,14]),head:'<tr><th>序號</th><th>姓名</th><th>圈選</th><th>受託戶</th></tr>',headH:7,rows,cont:'選票明細－'+e.name}});
+  });
+  openPV(packReport(blocks));
+}
+async function openSheet(){
+  if(needSig()){ try{ await fetchAdmin(false); }catch(e){ return toast(e.message); } }
+  const {config,residents,checkins}=A.data, st=stats();
+  const FIRST=13, OTHER=14, pages=[];
+  pages.push(residents.slice(0,FIRST)); for(let i=FIRST;i<residents.length;i+=OTHER) pages.push(residents.slice(i,i+OTHER));
+  const cap = pages.length===1?FIRST:OTHER, ownPage = pages[pages.length-1].length > cap-3;
+  const total = pages.length + (ownPage?1:0);
+  const head=`<colgroup><col style="width:6.68%"><col style="width:12.19%"><col style="width:12.78%"><col style="width:15.61%"><col style="width:26.5%"><col style="width:15.85%"><col style="width:10.39%"></colgroup>
+    <thead><tr><th>序<br>號</th><th>姓&nbsp;&nbsp;名</th><th>簽&nbsp;&nbsp;章</th><th>是否<br>委託出席</th><th style="text-decoration:underline">委託關係</th><th>區分所有<br>權比例</th><th>備註</th></tr></thead>`;
+  const row=r=>{ const c=checkins[r.seq];
+    return `<tr><td>${esc(r.seq)}</td><td>${esc(r.name)}</td><td class="sig">${c?`<img src="${c.sig}">`:''}</td>
+      <td class="att">${box(c&&c.mode==='本人')}本人${box(c&&c.mode==='委託')}委託</td>
+      <td class="rl">${REL.map(x=>`<div>${box(c&&c.mode==='委託'&&c.rel===x)}${x}</div>`).join('')}</td>
+      <td class="rt">${esc(r.ratio)}/${esc(st.denomStr)}</td><td class="rm">${c&&c.via?`委託${esc(c.via)}<br>出席`:''}</td></tr>`; };
+  const summary=`<table class="sum"><tr><th>應出席區分所有權人</th><td>${st.total} 人</td><th>區分所有權比例合計</th><td>${esc(st.denomStr)}</td></tr>
+    <tr><th>出席數</th><td>${st.att} 人<br><span style="font-size:9.5pt">（本人 ${st.self} 人、委託 ${st.proxy} 人）</span></td><th>出席區分所有權比例</th><td>${fmtNum(st.sumAtt)}</td></tr>
+    <tr><th>出席率（人數）</th><td>${pct(st.att,st.total)}</td><th>出席率（比例）</th><td>${pct(st.sumAtt,st.denom)}</td></tr></table>
+    <div class="note">統計時間：${esc(new Date().toLocaleString('zh-TW',{hour12:false}))}</div>`;
+  const title=`<div class="ttl">${esc(sheetTitle(config))}</div><div class="dt">會議日期：${esc(rocDate(config.date))}</div>`;
+  let html=pages.map((p,i)=>`<div class="page">${i===0?title:''}<table class="sheet">${head}<tbody>${p.map(row).join('')}</tbody></table>
+    ${(!ownPage&&i===pages.length-1)?summary:''}<div class="pn">第${i+1}頁，共${total}頁</div></div>`).join('');
+  if(ownPage) html+=`<div class="page">${summary}<div class="pn">第${total}頁，共${total}頁</div></div>`;
+  openPV(html);
+}
+
+/* ---------------- 啟動 ---------------- */
+if(PAGE==='show'){ try{ SH.code=localStorage.getItem('agm_show_code')||sessionStorage.getItem('agm_show_code')||''; }catch(e){}
+  if(SH.code) call('show',{code:SH.code}).then(d=>{ SH.data=d; startShow(); }).catch(e=>showLogin(/密碼/.test(e.message)?'':e.message)); else showLogin(); }
+else if(PAGE==='admin'){ A.pwd ? loadAdmin(true) : adminLogin();
+  setInterval(autoRefresh,10000); }
+else startCheckin();
+</script>
+</body>
+</html>
