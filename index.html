@@ -7,6 +7,7 @@
 <title>區權會報到系統</title>
 <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <!-- Google 後端網址放在同資料夾的 config.js（只要設定一次；以後更新 index.html 直接覆蓋即可） -->
 <script src="config.js"></script>
 <style>
@@ -347,6 +348,11 @@ function demoCall(action, p){
   if(action==='show'){ const code=String(p.code||''); if(!code || (code!==String(db.config.showPwd||'') && code!==String(db.config.adminPwd))) throw new Error('投影密碼錯誤');
     return buildShowData({config:db.config,residents:R,checkins:C,topics:db.topics,votes:db.votes,elections:db.elections,evotes:db.evotes}); }
   if(p.pwd !== db.config.adminPwd) throw new Error('管理密碼錯誤');
+  if(action==='restore'){ const d=p.data||{}; if(!Array.isArray(d.residents)) throw new Error('封存檔格式不正確');
+    const {adminPwd,showPwd}=db.config, c=d.config||{};
+    dbSave({config:{name:c.name||'',meeting:c.meeting||'',title:c.title||'',date:c.date||'',denom:c.denom||'',mode:c.mode||'personal',voteBy:c.voteBy||'ratio',open:false,showView:'auto',adminPwd,showPwd:showPwd||''},
+      residents:d.residents.map(r=>({seq:r.seq,name:r.name,ratio:r.ratio,token:r.token,delegate:r.delegate||'',group:r.group||''})),
+      checkins:d.checkins||{}, topics:d.topics||[], votes:d.votes||{}, elections:d.elections||[], evotes:d.evotes||{}}); return {}; }
   if(action==='reset'){ const keep=p.resetPwd?{adminPwd:'1234'}:{adminPwd:db.config.adminPwd, showPwd:db.config.showPwd||''};
     dbSave({config:{name:'',meeting:'',title:'',date:'',denom:'',open:false,...keep},residents:[],checkins:{},topics:[],votes:{},elections:[],evotes:{}}); return {}; }
   if(action==='setShowView'){ db.config.showView=String(p.view||'auto'); dbSave(db); return {}; }
@@ -760,10 +766,13 @@ function renderAdmin(){
       <button class="btn pri big" style="margin-top:16px" onclick="saveCfg()">儲存設定</button></div>
     <div class="card" style="margin-top:14px;border:1.5px solid #f3c4bf"><h2 style="color:var(--bad)">重置還原（清空全部資料）</h2>
       <p class="hint" style="margin-top:0">把系統還原成剛安裝好的空白狀態，給新的社區／大樓或新的管理者重新匯入資料使用。<br>
-      會清除：<b>住戶名冊、報到紀錄與簽名、議題與投票、委員選舉與選票、委託歸戶、會議設定</b>；所有住戶報到卡也會失效。<br><b class="r" style="color:var(--bad)">此動作無法復原，請先匯出備份。</b></p>
-      <button class="btn big" style="margin-top:10px" onclick="exportXlsx()">① 先匯出備份 Excel</button>
+      會清除：<b>住戶名冊、報到紀錄與簽名、議題與投票、委員選舉與選票、委託歸戶、會議設定</b>；所有住戶報到卡也會失效。<br><b class="r" style="color:var(--bad)">此動作無法復原，請先下載封存。</b></p>
+      <button class="btn big" style="margin-top:10px" onclick="archiveAll(this)">① 先下載會議資料封存（zip）</button>
       <label class="ck" style="margin-top:12px"><input type="checkbox" id="rs_pwd"> 管理密碼與投影密碼也恢復預設（管理密碼 1234、投影密碼清空）</label>
-      <button class="btn bad big" style="margin-top:8px" onclick="resetAll()">② 重置還原</button></div>`;
+      <button class="btn bad big" style="margin-top:8px" onclick="resetAll()">② 重置還原</button></div>
+    <div class="card" style="margin-top:14px"><h2>從封存檔還原</h2>
+      <p class="hint" style="margin-top:0">選擇之前下載的「會議資料封存」zip 檔，整場會議的資料（名冊、報到與簽名、投票、選舉、設定）會回到系統，可再查詢、列印或驗票。目前系統內的資料會被覆蓋；管理密碼與投影密碼不變，報到維持關閉。</p>
+      <label class="btn big" style="margin-top:10px">選擇封存檔（.zip）<input type="file" accept=".zip,.json" hidden onchange="restoreFile(this.files[0]);this.value=''"></label></div>`;
   }
   if(A.tab==='roster'){
     const tps=A.data.topics||[], stTxt={pending:'未開放',open:'投票中',closed:'已結束'};
@@ -802,6 +811,9 @@ function renderAdmin(){
       <div class="stats" style="margin-top:12px"><div class="stat"><span>出席數</span><b>${st.att} / ${st.total}</b></div><div class="stat"><span>出席率（比例）</span><b>${pct(st.sumAtt,st.denom)}</b></div></div>
       <button class="btn pri big" style="margin-top:14px" onclick="openSheet()">預覽並列印 / 存成 PDF</button>
       <button class="btn big" style="margin-top:10px" onclick="exportXlsx()">匯出報到與投票結果 Excel</button></div>
+    <div class="card"><h2>會後封存：下載全部資料到電腦</h2>
+      <p class="hint" style="margin-top:0">一個 zip 檔包含：簽到表、議題表決結果、委員選舉結果（離線網頁，可隨時列印或存成 PDF）、報到與投票結果 Excel、每戶簽名圖檔，以及系統還原用的完整備份。下載後可到「會議設定」→「重置還原」清空雲端資料，資料就只留在你的電腦。</p>
+      <button class="btn pri big" style="margin-top:10px" onclick="archiveAll(this)">下載會議資料封存（zip）</button></div>
     <div class="card"><h2>驗票資料（Google 試算表）</h2>
       <p class="hint" style="margin-top:0">在 Google 試算表產生／更新兩個工作表：<b>「驗票總表」</b>每戶一列（出席、委託、簽名、各議題意見、各選舉圈選），<b>「計票結果」</b>各議題與各選舉的統計。住戶要驗票時，直接查他那一列即可。<br>每次按「結束投票」也會自動更新；在試算表上方選單「區權會」也能手動更新。</p>
       ${DEMO?'<div class="demo" style="margin:10px 0 0">示範模式沒有 Google 試算表。可以先按上方「匯出報到與投票結果 Excel」，裡面有同樣的「驗票總表」。</div>'
@@ -1072,6 +1084,51 @@ async function refresh(){ if(await loadAdmin()) toast('已更新'); }
 async function revoke(seq){ const r=A.data.residents.find(x=>x.seq===seq), n=Object.values(A.data.checkins).filter(c=>c.via===seq).length;
   if(!confirm(`確定要撤銷 ${seq} ${r?r.name:''} 的報到與簽名嗎？${n?`\n委託他出席的 ${n} 戶也會一併撤銷。`:''}\n已投的票也會一併刪除。`)) return;
   try{ await call('revoke',{pwd:A.pwd,seq}); await loadAdmin(); toast('已撤銷'); }catch(e){ toast(e.message); } }
+/* ---------------- 會後封存（下載全部資料到電腦）與還原 ---------------- */
+function standaloneDoc(title,html){ const css=document.querySelector('style').textContent;
+  return `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${css}</style>
+<style>#pv{position:static}#pv .pages{zoom:1}</style></head><body><div id="pv"><div class="bar2"><button class="btn pri" onclick="print()">列印 / 存成 PDF</button><span style="color:#fff;align-self:center;margin-left:8px">${esc(title)}</span></div><div class="pages">${html}</div></div></body></html>`; }
+const safeName=t=>String(t).replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,60);
+async function archiveAll(btn){
+  if(!needLib('XLSX')||!needLib('JSZip')) return;
+  const old=btn?btn.innerHTML:''; if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span>　正在打包…'; }
+  try{
+    await fetchAdmin(false);
+    const D=A.data, c=D.config, base=safeName((c.name||'社區')+mtg(c)), now=new Date();
+    const ymd=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    const zip=new JSZip(); A.capture=true;
+    try{
+      await openSheet(); zip.file(`${base}_簽到表.html`, standaloneDoc(sheetTitle(c), A.captured));
+      if((D.topics||[]).length){ printTopics(); zip.file(`${base}_議題表決結果.html`, standaloneDoc('議題表決結果', A.captured)); }
+      if((D.elections||[]).length){ printElections(); zip.file(`${base}_委員選舉結果.html`, standaloneDoc('委員選舉結果', A.captured)); }
+      await exportXlsx(); zip.file(`${base}_報到與投票結果.xlsx`, XLSX.write(A.capturedWb,{type:'array',bookType:'xlsx'}));
+    } finally { A.capture=false; }
+    let ns=0; const sf=zip.folder('簽名圖檔');
+    D.residents.forEach(r=>{ const k=D.checkins[r.seq]; if(k&&k.sig&&!k.via){ sf.file(`${safeName(r.seq+'_'+r.name)}.png`, k.sig.split(',')[1], {base64:true}); ns++; } });
+    const {hasShowPwd,...cfg}=c;
+    zip.file('完整備份.json', JSON.stringify({app:'agm-checkin',version:1,exportedAt:now.toISOString(),config:cfg,residents:D.residents,checkins:D.checkins,topics:D.topics||[],votes:D.votes||{},elections:D.elections||[],evotes:D.evotes||{}}));
+    zip.file('說明.txt', [`${c.name||''}${mtg(c)}　會議資料封存`,`會議日期：${rocDate(c.date)}　封存時間：${now.toLocaleString('zh-TW',{hour12:false})}`,'',
+      '．…簽到表.html／議題表決結果.html／委員選舉結果.html：用瀏覽器打開，按「列印 / 存成 PDF」即可列印或存成 PDF（不需要網路）。',
+      '．…報到與投票結果.xlsx：驗票總表、報到結果、投票結果與明細、委員選舉與選票明細。',
+      `．簽名圖檔：每戶的報到簽名（共 ${ns} 張；委託同一受託戶出席的各戶，與受託戶共用同一個簽名）。`,
+      '．完整備份.json：系統還原用。日後需要時，到管理頁「會議設定」→「從封存檔還原」選這個 zip 檔，整場會議資料就會回到系統。',
+      '','請妥善保存本檔案（含住戶簽名與投票資料），勿外流。'].join('\r\n'));
+    const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${base}_會議資料封存_${ymd}.zip`; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },3000);
+    toast('已下載會議資料封存檔');
+  }catch(e){ alert('封存失敗：'+e.message); }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML=old; } } }
+async function restoreFile(f){
+  if(!f) return;
+  try{
+    let txt;
+    if(/\.zip$/i.test(f.name)){ if(!needLib('JSZip')) return; const z=await JSZip.loadAsync(await f.arrayBuffer()); const j=Object.values(z.files).find(x=>/完整備份\.json$/.test(x.name)); if(!j) throw new Error('zip 檔裡找不到「完整備份.json」'); txt=await j.async('string'); }
+    else txt=await f.text();
+    const d=JSON.parse(txt); if(d.app!=='agm-checkin'||!Array.isArray(d.residents)) throw new Error('這不是本系統的封存檔');
+    const c=d.config||{};
+    if(!confirm(`要用這個封存檔取代系統目前的「所有」資料嗎？\n\n社區：${c.name||'（未命名）'}　${mtg(c)}\n會議日期：${rocDate(c.date)}\n住戶 ${d.residents.length} 戶・報到 ${Object.keys(d.checkins||{}).length} 戶・議題 ${(d.topics||[]).length} 案・選舉 ${(d.elections||[]).length} 場\n封存時間：${new Date(d.exportedAt).toLocaleString('zh-TW',{hour12:false})}\n\n目前系統內的資料會被覆蓋（管理密碼與投影密碼不變）。`)) return;
+    toast('正在還原…'); await call('restore',{pwd:A.pwd,data:d}); await loadAdmin(); toast('已從封存檔還原（報到維持關閉）');
+  }catch(e){ alert('還原失敗：'+e.message); } }
 async function resetAll(){
   const rp=$('#rs_pwd').checked;
   if(!confirm('確定要「重置還原」嗎？\n\n住戶名冊、報到紀錄與簽名、議題與投票、委員選舉、委託歸戶、會議設定將全部清空，住戶報到卡全部失效。\n'+(rp?'管理密碼將恢復為 1234、投影密碼清空。':'管理密碼與投影密碼維持不變。')+'\n\n此動作無法復原。')) return;
@@ -1162,6 +1219,7 @@ async function exportXlsx(){ if(!needLib('XLSX')) return; const {residents,check
   add(ad,'驗票總表',[10,20,8,12,22,16,18,12,...T.map(()=>16),...E.map(()=>40)]);
   add(aoa,'報到結果',[14,22,18,14,22,10,16]);
   if(E.length){ add(er,'委員選舉',[8,10,22,10,10,18,10]); add(ed,'選票明細',[20,10,20,40,14,16]); } if(T.length){ add(vs,'投票結果',[6,30,8,14,12,14,14,10,12,10,12,10,12,10,12,14,14]); add(vd,'投票明細',[8,30,10,20,14,8,14,16]); }
+  if(A.capture){ A.capturedWb=wb; return; }
   XLSX.writeFile(wb,`${config.name||'社區'}${mtg(config)}報到與投票結果.xlsx`); }
 function checkinURL(){ return location.origin==='null'||location.protocol==='file:' ? location.href.split('?')[0] : location.origin+location.pathname; }
 function qrData(url,cell){ const q=qrcode(0,'M'); q.addData(url); q.make(); return q.createDataURL(cell,cell*2); }
@@ -1188,7 +1246,7 @@ function printCards(onlyTodo){ if(!needLib('qrcode')) return; const {config,resi
 function copyURL(){ navigator.clipboard.writeText(checkinURL()).then(()=>toast('已複製網址'),()=>prompt('請手動複製',checkinURL())); }
 
 /* ---------------- 列印：簽到表 / QR 海報 ---------------- */
-function openPV(html){ $('#pages').innerHTML=html; $('#pv').hidden=false; fitPV(); document.body.style.overflow='hidden'; }
+function openPV(html){ if(A.capture){ A.captured=html; return; } $('#pages').innerHTML=html; $('#pv').hidden=false; fitPV(); document.body.style.overflow='hidden'; }
 function closePV(){ $('#pv').hidden=true; document.body.style.overflow=''; }
 function fitPV(){ const px=210*96/25.4+20; $('#pages').style.setProperty('--z', Math.min(1, innerWidth/px)); }
 addEventListener('resize',()=>{ if(!$('#pv').hidden) fitPV(); });
@@ -1229,7 +1287,7 @@ function rptAttend(){ const st=stats(), vb=voteBy(A.data.config);
 const rptSign=()=>({h:34,html:`<div class="sgn"><span>主席：</span><span>記錄：</span><span>監票：</span></div><div class="note">列印時間：${esc(new Date().toLocaleString('zh-TW',{hour12:false}))}</div>`});
 
 function printTopics(){
-  const T=A.data.topics||[], V=A.data.votes||{}, R=A.data.residents, C=A.data.checkins, vb=voteBy(A.data.config), withD=$('#px_vd')&&$('#px_vd').checked;
+  const T=A.data.topics||[], V=A.data.votes||{}, R=A.data.residents, C=A.data.checkins, vb=voteBy(A.data.config), withD=A.capture?true:($('#px_vd')&&$('#px_vd').checked);
   const stTxt={pending:'未開放',open:'投票中',closed:'已結束'};
   const blocks=[rptHead('議題表決結果'), rptAttend()];
   const rows=T.map(t=>{ const x=tally(t.id), J=judge(x,t,vb), R2=vb==='ratio';
@@ -1255,9 +1313,9 @@ function printTopics(){
 }
 function printElections(){
   const all=A.data.elections||[], sel=[...document.querySelectorAll('.px_e:checked')].map(x=>x.value);
-  const E=document.querySelectorAll('.px_e').length?all.filter(e=>sel.includes(e.id)):all;
+  const E=(!A.capture&&document.querySelectorAll('.px_e').length)?all.filter(e=>sel.includes(e.id)):all;
   if(!E.length) return toast('請至少勾選一場選舉');
-  const mode=(document.querySelector('[name=px_r]:checked')||{}).value||'top', withD=$('#px_ed')&&$('#px_ed').checked;
+  const mode=A.capture?'all':((document.querySelector('[name=px_r]:checked')||{}).value||'top'), withD=A.capture?true:($('#px_ed')&&$('#px_ed').checked);
   const stTxt={pending:'未開放',open:'投票中',closed:'已結束'}, EV=A.data.evotes||{}, R=A.data.residents, nm=sq=>{ const r=R.find(x=>x.seq===sq); return r?r.name:''; };
   const blocks=[rptHead('委員選舉結果'), rptAttend()];
   E.forEach(e=>{ const x=etally(e), list=mode==='all'?x.list:x.list.filter(y=>y.res);
